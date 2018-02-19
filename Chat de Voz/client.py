@@ -4,23 +4,37 @@ import time
 import os
 import os.path as path
 import pyaudio
-import wav
+import wave
 import pygame
 
 def main():
-    if len(sys.argv)!=5:
+    if len(sys.argv)!=4:
         print ("Error!!!")
         exit()
     ip = sys.argv[1] #Server's ip
     port = sys.argv[2] #Server's port
-    operation = sys.argv[3] #Operation to perform
-    user =  sys.argv[4]
+    user = sys.argv[3] #User
 
+    ipuser=input("Digite su ip: ")
+    portuser=input("Digite su puerto: ")
+
+
+    #Creando el contexto para las conexiones
     context= zmq.Context()
+
+
+    #Socket para conectarse al servidor
     s = context.socket(zmq.REQ)
     s.connect("tcp://{}:{}".format(ip,port))
 
-    if operation=="Send":
+    #Socket para hacer el enlace al puerto
+    conexion = context.socket(zmq.REQ)
+    conexion.bind("tcp://*:{}".format(portuser))
+
+
+    operation=input("¿Desea enviar un audio? [Si-No]")
+
+    if operation=="Si":
         usertosend=input("¿Username to send?")
 
         s.send_json({"msg": usertosend})
@@ -47,7 +61,7 @@ def main():
                         input = True,
                         frames_per_buffer = chunk)
 
-        print "Recording..."
+        print ("Recording...")
         all = []
         
 
@@ -55,7 +69,7 @@ def main():
         while K_KP_ENTER != event.key:
             data = stream.read(chunk)
             all.append(data)
-        print "finish recording"
+        print ("finish recording")
 
         stream.close()
         p.terminate()
@@ -72,9 +86,9 @@ def main():
         #Ciclo para mandar el archivo al servidor por partes
 
 
-        with open(WAVE_OUTPUT_FILENAME, "rb") as input:
-            datos=input.read()
-            tam=input.tell()
+        with open(WAVE_OUTPUT_FILENAME, "rb") as entrada:
+            datos=entrada.read()
+            tam=entrada.tell()
             lim=tam/(1024*1024)
             print("Tamaño: "+ str(tam))
             parts=int(lim+1)
@@ -84,7 +98,7 @@ def main():
             input.seek(0)
             envia=s.recv_json()
             while i<=lim:
-                data2=input.read(1024*1024)
+                data2=entrada.read(1024*1024)
                 result=open("Parte"+str(i+1)+".mp3","ab+")
                 result.write(data2)
                 s.send(data2) 
@@ -95,10 +109,17 @@ def main():
 
         final=input("Sending...")
 
-    elif operation=="Listen":
-        
 
-        
+    elif operation="No":
+        pass
+
+
+
+    else:
+
+        print("Error!! Unsupported operation")
+
+
     print("successful operation")
 
     finish= int(time.time())
@@ -107,11 +128,6 @@ def main():
 
     print (tiempo)
     exit()
-
-
-
-    else:
-        print("Error!! Unsupported operation")
 
     print("Connecting to server {} at {}".format(ip,port))
 
