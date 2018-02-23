@@ -3,6 +3,7 @@ import time
 import sys
 import os
 import threading
+import json
 
 
 def main():
@@ -35,10 +36,18 @@ def main():
 
 			usertoconect=s.recv_json()
 
-			if usertoconect in listausuarios["nombre"]:
+			for user in listausuarios:
 
-				conexion = context.socket(zmq.REP)
-				conexion.connect("tcp://{}:{}".format(listausuarios["ip"],listausuarios["port"]))
+				if usertoconect == user["nombre"]:
+
+					conexion = context.socket(zmq.REQ)
+					conexion.connect("tcp://{}:{}".format(user["ip"],user["port"]))
+
+					while True:
+						audio = s.recv()
+						conexion.send(audio)
+				else:
+					print("Usuario no conectado")
 
 
 		else:
