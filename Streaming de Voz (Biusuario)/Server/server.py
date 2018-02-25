@@ -2,7 +2,6 @@ import zmq
 import time
 import sys
 import os
-import threading
 import json
 
 
@@ -35,7 +34,7 @@ def main():
 			usuarionuevo.connect("tcp://{}:{}".format(msg["ip"], peta))
 			listausuarios[msg["nombreenv"]] = usuarionuevo
 			
-
+			#Enviandole el puerto al usuario
 			s.send_json(peta)
 
 
@@ -47,22 +46,23 @@ def main():
 			if listausuarios.get(usertoconect)!= None:				
 
 				receptor = listausuarios[usertoconect]
-				receptor.send_json({"op":"Llamar", "solicitud": msg["nombreenv"]})
+				receptor.send_json({"op":"Llamando", "solicitud": msg["nombreenv"]})
 
 				receptor.recv_json()
 
 				emisor = listausuarios[msg["nombreenv"]]
-				emisor.send_json({"op": "confirm", "receptor": usertoconect})
+				emisor.send_json({"op": "Estableciendo", "receptor": usertoconect})
 				emisor.recv_json()
 
-				receptor.send_json({"op":"confirm","receptor": msg["nombreenv"]})
+				receptor.send_json({"op":"Estableciendo","receptor": msg["nombreenv"]})
 				receptor.recv_json()
 
-				while True:
-					s.send_string("Listo")
-					receptor = listausuarios[usertoconect]
-					receptor.send_json(msg)
-					receptor.recv_string()
+				
+				receptor=listausuarios[msg["receptor"]]
+				s.send_string("Listo")
+				receptor.send_json(msg)
+				receptor.recv_string()
+
 			else:
 				print("Usuario no conectado")
 

@@ -1,22 +1,26 @@
 # coding=utf-8
 import zmq
 import sys
-import time
 import os
 import os.path as path
 import socket
-from random import randrange
 import pyaudio
 import wave
-import json
+import threading
 
+
+
+CHUNK = 1024
+FORMAT = pyaudio.paInt16
+CHANNELS = 2
+RATE = 44100
 
 def Enviar(CanalServidor):
 
 	p = pyaudio.PyAudio()
 
 
-	stream = audio.open(format=FORMAT,
+	stream = p.open(format=FORMAT,
 	channels=CHANNELS,
 	rate=RATE,
 	input=True,
@@ -42,16 +46,28 @@ def Recibir(CanalServidor, CanalMio):
 	p = pyaudio.PyAudio()
 
 
-	stream = audio.open(format=FORMAT,
+	stream = p.open(format=FORMAT,
 	channels=CHANNELS,
 	rate=RATE,
 	input=True,
 	frames_per_buffer=CHUNK)
 
-	while True:
-		recibir = CanalMio.recv_json()
-		stream.write(recibir.decode('UTF-8','ignore'))
+	solicitud = CanalMio.recv_json()
+
+	if solicitud["op"]=="Llamando":
+		print("El usuario {} te está llamando".format(solicitud["solicitud"]))
+		CanalServidor.send_json("Listo")
+
+	elif solicitud["op"] ==  "Estableciendo":
+		CanalServidor.send_json("Listo")
+
+
+	else:
 		threading.Thread(target= Enviar, args=(CanalServidor)).start()
+		while True:
+			recibir = CanalMio.recv_json()
+			stream.write(recibir.decode('UTF-8','ignore'))
+			
 
 	stream.stop_stream()
 	stream.close()
@@ -59,53 +75,48 @@ def Recibir(CanalServidor, CanalMio):
 
 def main():
 
-
-	CHUNK = 1024
-	FORMAT = pyaudio.paInt16
-	CHANNELS = 2
-	RATE = 44100
-
+	#Obteniendo mi ip
 	get_myip = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 	get_myip.connect(("gmail.com",80))
-	Myip = get_myip.getsockname()
+	Myip , basura = get_myip.getsockname()
+	print(Myip)
+
+	ip = sys.argv[1] #Server's ip
+	port = sys.argv[2] #Server's port
 
 
-    ip = sys.argv[1] #Server's ip
-    port = sys.argv[2] #Server's port
+	if len(sys.argv)!=3:
+	    print ("Error!!!")
+	    exit()
 
 
-    if len(sys.argv)!=3:
-        print ("Error!!!")
-        exit()
 
-    
+	context= zmq.Context() #Contexto para los sockets
 
-    context= zmq.Context() #Contexto para los sockets
+	#Conexión con el servidor
+	sc = context.socket(zmq.REQ)
+	sc.connect("tcp://{}:{}".format(ip,port))
 
-    #Conexión con el servidor
-    sc = context.socket(zmq.REQ)
-    sc.connect("tcp://{}:{}".format(ip,port))
+	#Nombre de usuario que se está conectando
+	name=input("Tu Nombre: ")
+	sc.send_json({"op":"Registrarse","nombreenv": name,"ip":Myip})
+	puerto = sc.recv_json()
 
-    #Nombre de usuario que se está conectando
-    name=input("Tu Nombre: ")
-    sc.send_json({"op":"Registrarse","nombreenv": name,"ip":Myip})
-    puerto = sc.recv_json()
-
-    eleccion = input("¿Desea realizar una llamada? \n 1.Si\n 2.No")
+	eleccion = input("¿Desea realizar una llamada? \n 1.Si\n 2.No \n")
 
 
-    if eleccion==1:
-    	com=input("Digite el nombre del usuario con el cual desea conectarse:")
-    	sc.send_json({"op":"Llamar","nombreenv": name,"ip":Myip})
-    	sc.recv_json()
-    	sc.send_json(com)
+	if eleccion=='1':
+		com=input("Digite el nombre del usuario con el cual desea conectarse: ")
+		sc.send_json({"op":"Llamar","nombreenv": name,"ip":Myip})
+		sc.recv_json()
+		sc.send_json(com)
 
-    #Socket para escuchar
-    canal= context.socket(zmq.REP)
-    canal.bind("tcp://* :{}".format(puerto))
+	#Socket para escuchar
+	canal= context.socket(zmq.REP)
+	canal.bind("tcp://*:{}".format(puerto))
 
-    
-    threading.Thread(target = Recibir, args = (sc, canal, name)).start()
+
+	threading.Thread(target = Recibir, args = (sc, canal)).start()
 
 
 
