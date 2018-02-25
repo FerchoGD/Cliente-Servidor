@@ -16,38 +16,55 @@ def main():
 	context = zmq.Context()
 	s = context.socket(zmq.REP)
 	s.bind("tcp://*:{}".format(port))
+
+	#Asignando puerto
 	peta=4000
 
-	listausuarios=[]
+	listausuarios={}
 
 
 	while True:
 
 		msg= s.recv_json()
-		if msg["op"]=="Conectarse":
+
+		if msg["op"]=="Registrarse":
 			peta+=1
 			
-			#Añadiendo cada usuario que se conecta a la lista
-			listausuarios.append({"nombre": msg["nombreenv"], "ip": msg["ip"],"port":peta})
-			'''for usuario in listausuarios:
-				print (usuario["nombre"])'''
+			#Añadiendo cada usuario que se conecta al diccionario
+			usuarionuevo = context.socket(zmq.REQ)
+			usuarionuevo.connect("tcp://{}:{}".format(msg["ip"], peta))
+			listausuarios[msg["nombreenv"]] = usuarionuevo
+			
 
 			s.send_json(peta)
 
+
+		elif msg["op"]=="Llamar":
+
+			s.send_json("Listo")
 			usertoconect=s.recv_json()
 
-			for user in listausuarios:
+			if listausuarios.get(usertoconect)!= None:				
 
-				if usertoconect == user["nombre"]:
+				receptor = listausuarios[usertoconect]
+				receptor.send_json({"op":"Llamar", "solicitud": msg["nombreenv"]})
 
-					conexion = context.socket(zmq.REQ)
-					conexion.connect("tcp://{}:{}".format(user["ip"],user["port"]))
+				receptor.recv_json()
 
-					while True:
-						audio = s.recv()
-						conexion.send(audio)
-				else:
-					print("Usuario no conectado")
+				emisor = listausuarios[msg["nombreenv"]]
+				emisor.send_json({"op": "confirm", "receptor": usertoconect})
+				emisor.recv_json()
+
+				receptor.send_json({"op":"confirm","receptor": msg["nombreenv"]})
+				receptor.recv_json()
+
+				while True:
+					s.send_string("Listo")
+					receptor = listausuarios[usertoconect]
+					receptor.send_json(msg)
+					receptor.recv_string()
+			else:
+				print("Usuario no conectado")
 
 
 		else:
