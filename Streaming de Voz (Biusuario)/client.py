@@ -15,7 +15,7 @@ FORMAT = pyaudio.paInt16
 CHANNELS = 2
 RATE = 44100
 
-def Enviar(CanalServidor):
+def Enviar(CanalServidor, Receptor):
 
 	p = pyaudio.PyAudio()
 
@@ -32,8 +32,9 @@ def Enviar(CanalServidor):
 
 		audio = stream.read(CHUNK)
 
-		CanalServidor.send_json(audio.decode('UTF-8','ignore'))
+		CanalServidor.send_json({"op": "Online","touser": Receptor, "audio":audio.decode('UTF-8','ignore')})
 		CanalServidor.recv_json()
+		CanalServidor.send_string("Listo")
 
 	stream.stop_stream()
 	stream.close()
@@ -52,26 +53,35 @@ def Recibir(CanalServidor, CanalMio):
 	input=True,
 	frames_per_buffer=CHUNK)
 
-	solicitud = CanalMio.recv_json()
+	while True:
 
-	if solicitud["op"]=="Llamando":
-		print("El usuario {} te está llamando".format(solicitud["solicitud"]))
-		CanalServidor.send_json("Listo")
+		solicitud = CanalMio.recv_json()
 
-	elif solicitud["op"] ==  "Estableciendo":
-		CanalServidor.send_json("Listo")
+		if solicitud["op"]=="Llamando":
+			print("El usuario {} te está llamando".format(solicitud["solicitud"]))
+			print("Llamando->Online")
+			CanalMio.send_string("Listo")
+
+		elif solicitud["op"] ==  "Estableciendo":
+			threading.Thread(target= Enviar, args=(CanalServidor, solicitud["receptor"])).start()
+			CanalMio.send_json("Listo")
 
 
-	else:
-		threading.Thread(target= Enviar, args=(CanalServidor)).start()
-		while True:
-			recibir = CanalMio.recv_json()
-			stream.write(recibir.decode('UTF-8','ignore'))
-			
+		elif solicitud["op"]== "Online":
+			stream.write(solicitud["audio"].encode('UTF-8','ignore'))
+			CanalMio.send_string("Listo")
+
+		else:
+			CanalMio.send_string("Listo")
+					
 
 	stream.stop_stream()
 	stream.close()
 	p.terminate()
+
+
+
+
 
 def main():
 
@@ -107,7 +117,7 @@ def main():
 
 	if eleccion=='1':
 		com=input("Digite el nombre del usuario con el cual desea conectarse: ")
-		sc.send_json({"op":"Llamar","nombreenv": name,"ip":Myip})
+		sc.send_json({"op":"Llamar","nombreenv": name})
 		sc.recv_json()
 		sc.send_json(com)
 

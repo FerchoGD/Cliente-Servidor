@@ -47,24 +47,28 @@ def main():
 
 				receptor = listausuarios[usertoconect]
 				receptor.send_json({"op":"Llamando", "solicitud": msg["nombreenv"]})
+				receptor.recv_string()
 
-				receptor.recv_json()
+				print("Holaaa, conectando a los dos clientes..")
 
 				emisor = listausuarios[msg["nombreenv"]]
 				emisor.send_json({"op": "Estableciendo", "receptor": usertoconect})
 				emisor.recv_json()
 
+				print("Go go go!")
+
 				receptor.send_json({"op":"Estableciendo","receptor": msg["nombreenv"]})
 				receptor.recv_json()
-
+			else:
+				print("Usuario no conectado")
 				
-				receptor=listausuarios[msg["receptor"]]
-				s.send_string("Listo")
+				
+		elif msg["op"] == "Online":
+				receptor=listausuarios[msg["touser"]]
 				receptor.send_json(msg)
 				receptor.recv_string()
 
-			else:
-				print("Usuario no conectado")
+			
 
 
 		else:
