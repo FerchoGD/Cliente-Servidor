@@ -15,7 +15,7 @@ FORMAT = pyaudio.paInt16
 CHANNELS = 2
 RATE = 44100
 
-def Enviar(CanalServidor, Receptor):
+def Enviar(CanalSolicitudes, Receptor):
 
 	p = pyaudio.PyAudio()
 
@@ -32,9 +32,8 @@ def Enviar(CanalServidor, Receptor):
 
 		audio = stream.read(CHUNK)
 
-		CanalServidor.send_json({"op": "Online","touser": Receptor, "audio":audio.decode('UTF-8','ignore')})
-		CanalServidor.recv_json()
-		CanalServidor.send_string("Listo")
+		CanalSolicitudes.send_json({"op": "Online","touser": Receptor, "audio": audio.decode('UTF-8','ignore')})
+		CanalSolicitudes.recv_string()
 
 	stream.stop_stream()
 	stream.close()
@@ -63,11 +62,13 @@ def Recibir(CanalServidor, CanalMio):
 			CanalMio.send_string("Listo")
 
 		elif solicitud["op"] ==  "Estableciendo":
+
+			#Hilo para enviar info al servidor
 			threading.Thread(target= Enviar, args=(CanalServidor, solicitud["receptor"])).start()
-			CanalMio.send_json("Listo")
+			CanalMio.send_string("Listo")
 
 
-		elif solicitud["op"]== "Online":
+		elif solicitud["op"] == "Online":
 			stream.write(solicitud["audio"].encode('UTF-8','ignore'))
 			CanalMio.send_string("Listo")
 
@@ -112,7 +113,7 @@ def main():
 	sc.send_json({"op":"Registrarse","nombreenv": name,"ip":Myip})
 	puerto = sc.recv_json()
 
-	eleccion = input("¿Desea realizar una llamada? \n 1.Si\n 2.No \n")
+	eleccion = input("¿Desea realizar una llamada? \n 1.Si\n 2.No \n Tu Respuesta>> ")
 
 
 	if eleccion=='1':
