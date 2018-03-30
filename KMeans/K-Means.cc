@@ -16,7 +16,7 @@ class Point
 {
 private:
 	int id_point, id_cluster;
-	tuple<int, tuple<int,int>> values;
+	tuple<int, vector<tuple<int,int>>> values;
 	int total_values;
 	string name;
 
