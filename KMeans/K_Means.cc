@@ -194,6 +194,61 @@ public:
 		return res;
 	}
 
+	void Ordenar(vector<pair<short,short>>& array, int start,int end){
+
+	    int pivot;
+
+	    if (start < end) {
+	        pivot = divide(array, start, end);
+
+	        // Ordeno la lista de los menores
+	        Ordenar(array, start, pivot - 1);
+
+	        // Ordeno la lista de los mayores
+	        Ordenar(array, pivot + 1, end);
+	    }
+	}
+
+			// Función para dividir el array y hacer los intercambios
+	int divide(vector<pair<short,short>>& array, int start, int end) {
+	    int left;
+	    int right;
+	    short pivot;
+	    pair<short,short> temp;
+
+	    pivot = array[start].second;
+	    left = start;
+	    right = end;
+
+	    // Mientras no se cruzen los índices
+	    while (left < right) {
+	        while (array[right].second > pivot) {
+	            right--;
+	        }
+
+	        while ((left < right) && (array[left].second <= pivot)) {
+	            left++;
+	        }
+
+	        // Si todavía no se cruzan los indices seguimos intercambiando
+	        if (left < right) {
+	            temp = array[left];
+	            array[left] = array[right];
+	            array[right] = temp;
+	        }
+	    }
+
+	    // Los índices ya se han cruzado, ponemos el pivot en el lugar que le corresponde
+	    temp = array[right];
+	    array[right] = array[start];
+	    array[start] = temp;
+
+	    // La nueva posición del pivot
+	    return right;
+	}
+
+	// Función recursiva para hacer el ordenamiento
+
 	int ProdPunto(PointUser p,Grupo g){
 
 		int resultado=0;
@@ -296,34 +351,73 @@ public:
 			cout<<endl<<endl;	
 		}
 
-		for(int i=0;i < 1;i++){
+		
+		int op=0;
+		vector<pair<short,short>> VecCentro;
+
+		for(int i=0;i < 5;i++){
 			vector<pair<short,short>> VecCentro;
-			for(int j=0;j < Grupos[i].getTotalPoints();j++){
-				for(int k=0;k < Grupos[i].getPoint(j).getTotalPeliculas();k++){
-					for(int l=0;l < VecCentro.size();l++){
+			//Grupos[i].getTotalPoints()
+			int l;
+			int k=0;
+			for(int j=0;j <Grupos[i].getTotalPoints();j++){
+			
+				if(VecCentro.size()!= 0 and j > 0 ){
+					op=VecCentro.size();
+					for(int l=0;l < op;){
 						if(VecCentro[l].second == Grupos[i].getPoint(j).getPair(k).second){
 							VecCentro[l].first+=Grupos[i].getPoint(j).getPair(k).first;
+							k++;
+							l++;
 						}
-						else
+						
+						if(VecCentro[l].second < Grupos[i].getPoint(j).getPair(k).second){
+							l++;
+							/*if(VecCentro[op-1].second < Grupos[i].getPoint(j).getPair(k).second){
+								VecCentro.push_back(Grupos[i].getPoint(j).getPair(k));
+								k++;
+							}*/
+
+						}
+
+						if(VecCentro[l].second > Grupos[i].getPoint(j).getPair(k).second)
 						{
-							for(int m=0;m < VecCentro.size();m++){
-								if(VecCentro[m].second > Grupos[i].getPoint(j).getPair(k).second){
-									VecCentro.insert(VecCentro.begin() +(m-1),Grupos[i].getPoint(j).getPair(k));
-								}
-							}
+							VecCentro.push_back(Grupos[i].getPoint(j).getPair(k));
+							k++;
 						}
+
+						if(k >= Grupos[i].getPoint(j).getTotalPeliculas()){
+								break;
+						}
+							
 
 					}
-						
-
 				}
-									
-			}
 
-		}
-		for(int i=0;i < VecCentro.size();i++){
-			cout << VecCentro[i].first;
-			cout << VecCentro[i].second;
+				else{
+
+					for(int n=0;n < Grupos[i].getPoint(j).getTotalPeliculas();n++){
+						VecCentro.push_back(Grupos[i].getPoint(j).getPair(n));
+						
+					}
+				}
+				
+				while(k < Grupos[i].getPoint(j).getTotalPeliculas() and Grupos[i].getPoint(j).getPair(k).second > VecCentro[VecCentro.size()-1].second){
+					VecCentro.push_back(Grupos[i].getPoint(j).getPair(k));
+					k++;
+				}
+				k=0;
+				Ordenar(VecCentro,0,VecCentro.size()-1);
+		
+			}
+			
+			
+			for(int i=0;i < VecCentro.size();i++){
+				cout <<"Vec "<< "("<< VecCentro[i].first<<","<< VecCentro[i].second<<")"<<"-"<<endl;
+
+			}
+			cout<<"-----------------------------------------------------------------"<<endl;
+			
 		}
 
 
