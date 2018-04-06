@@ -16,12 +16,12 @@ class PointUser
 {
 private:
 	int id_point, id_grupo;
-	vector<pair<short,short>> values;
+	vector<pair<double,double>> values;
 	int total_Peliculas;
 	bool esCentroide;
 
 public:
-	PointUser(int id_point, vector<pair<short,short>>& valores)
+	PointUser(int id_point, vector<pair<double,double>>& valores)
 	{
 		this->id_point = id_point;
 		total_Peliculas = valores.size();
@@ -48,7 +48,7 @@ public:
 		return id_grupo;
 	}
 
-	pair<short,short> getPair(int indice)
+	pair<double,double> getPair(int indice)
 	{
 		return values[indice];
 	}
@@ -66,7 +66,7 @@ public:
 		return esCentroide;
 	}
 
-	vector<pair<short,short>> getValues(){
+	vector<pair<double,double>> getValues(){
 		return values;
 	};
 };
@@ -75,7 +75,7 @@ class Grupo
 {
 private:
 	int id_grupo;
-	vector<pair <short,short>> centroide;
+	vector<pair <double,double>> centroide;
 	vector<PointUser> points;
 	int popo;
 	int total_Peliculas;
@@ -113,11 +113,14 @@ public:
 		return false;
 	}
 
-	void nuevoCentroide(vector<pair<short,short>>& vectorcito){
-		centroide=vectorcito;
+	void nuevoCentroide(vector<pair<double,double>>& vectorcito){
+		this-> centroide.resize(vectorcito.size());
+		for (int i=0; i < vectorcito.size(); i++){
+			this->centroide[i] = vectorcito[i];
+		}
 	}
 
-	pair <short,short> getCentralPair(int index)
+	pair <double,double> getCentralPair(int index)
 	{
 		return centroide[index];
 	}
@@ -147,7 +150,7 @@ public:
 	}
 
 
-	vector<pair<short,short>> getCentroide(){
+	vector<pair<double,double>> getCentroide(){
 		return centroide;
 	};
 };
@@ -171,7 +174,7 @@ public:
 	double ModuloP(PointUser p){
 
 		int resultado=0;
-		vector<pair<short,short>> punto;
+		vector<pair<double,double>> punto;
 		punto=p.getValues();
 		for(int i=0; i<punto.size();i++){
 			resultado+=punto[i].first * punto[i].first;
@@ -184,7 +187,7 @@ public:
 	double ModuloG(Grupo g){
 
 		int resultado=0;
-		vector<pair<short,short>> grupo;
+		vector<pair<double,double>> grupo;
 		grupo=g.getCentroide();
 		for(int i=0; i<grupo.size();i++){
 			resultado+=grupo[i].first * grupo[i].first;
@@ -194,7 +197,7 @@ public:
 		return res;
 	}
 
-	void Ordenar(vector<pair<short,short>>& array, int start,int end){
+	void Ordenar(vector<pair<double,double>>& array, int start,int end){
 
 	    int pivot;
 
@@ -210,11 +213,11 @@ public:
 	}
 
 			// Función para dividir el array y hacer los intercambios
-	int divide(vector<pair<short,short>>& array, int start, int end) {
+	int divide(vector<pair<double,double>>& array, int start, int end) {
 	    int left;
 	    int right;
-	    short pivot;
-	    pair<short,short> temp;
+	    double pivot;
+	    pair<double,double> temp;
 
 	    pivot = array[start].second;
 	    left = start;
@@ -252,7 +255,7 @@ public:
 	int ProdPunto(PointUser p,Grupo g){
 
 		int resultado=0;
-		vector<pair<short,short>> punto,centroide;
+		vector<pair<double,double>> punto,centroide;
 		punto=p.getValues();
 		centroide=g.getCentroide();
 
@@ -287,6 +290,17 @@ public:
 		}
 		return resultado;
 	}
+
+
+	void PromediarCambiar(vector<pair<double,double>>& centro,Grupo grupo){
+		int numero=grupo.getTotalPoints();
+		for(int i=0; i<centro.size();i++){
+			centro[i].first=centro[i].first/numero;
+		}
+		grupo.nuevoCentroide(centro);
+	}
+
+
 
 	void run(vector<PointUser>& points)
 	{
@@ -350,10 +364,10 @@ public:
 
 		
 		int op=0;
-		vector<pair<short,short>> VecCentro;
+		vector<pair<double,double>> VecCentro;
 
 		for(int i=0;i < 5;i++){
-			vector<pair<short,short>> VecCentro;
+			vector<pair<double,double>> VecCentro;
 			//Grupos[i].getTotalPoints()
 			int l;
 			int k=0;
@@ -414,11 +428,13 @@ public:
 		
 			}
 			
-			
-			for(int i=0;i < VecCentro.size();i++){
-				cout <<"Vec "<< "("<< VecCentro[i].first<<","<< VecCentro[i].second<<")"<<"-"<<endl;
+			PromediarCambiar(VecCentro,Grupos[i]);
+			for(int j=0;j < VecCentro.size();j++){
+				cout <<"Vec "<< "("<< VecCentro[j].first<<","<< VecCentro[j].second<<")"<<"-"<<endl;
+				cout <<"Cen "<< "("<< Grupos[i].getCentralPair(j).first<<","<< Grupos[i].getCentralPair(j).second<<")"<<"C"<<endl;
 
 			}
+
 			cout<<"-----------------------------------------------------------------"<<endl;
 			
 		}
@@ -431,9 +447,9 @@ public:
 };
 
 
-int LlenarDatos(vector<pair<short,short>>& valores,string linea){
+int LlenarDatos(vector<pair<double,double>>& valores,string linea){
 	
-	pair<short,short> pareja;
+	pair<double,double> pareja;
     int i=0;
 
 
@@ -488,13 +504,13 @@ int LlenarDatos(vector<pair<short,short>>& valores,string linea){
 
 int main()
 {	
-	ifstream archivo_entrada("users.txt");
+	ifstream archivo_entrada("usuarios.txt");
     string linea;
     vector<PointUser> points;
 
     while(getline(archivo_entrada, linea)){
 
-    	vector<pair<short,short>> valores;
+    	vector<pair<double,double>> valores;
     	int usuario=LlenarDatos(valores,linea);
 
     	PointUser p(usuario, valores);
