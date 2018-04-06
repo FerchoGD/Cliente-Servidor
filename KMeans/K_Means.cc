@@ -321,14 +321,13 @@ public:
 			double min_angul = 360;
 			for(int j=0;j < Grupos.size();j++){
 
-				cout << points[i].getID()<< endl;
-				cout << Grupos[j].getPopo()<< endl;
+				//cout << points[i].getID()<< endl;
+				//cout << Grupos[j].getPopo()<< endl<<endl;
 				int r = ProdPunto(points[i], Grupos[j]);
 				double m1 =ModuloP(points[i]);
 				double m2 =ModuloG(Grupos[j]);
 				float resultado = (r/(m1*m2));
 				float arc= acos(resultado) *180 / M_PI;
-				cout << m1 <<"----"<< m2  <<"----"<< r <<"-----"<<arc<<"-----"<< resultado <<endl ;
 				if(arc < min_angul){
 					min_angul = arc;
 					idPert = j;
@@ -337,15 +336,13 @@ public:
 			}
 			points[i].setGrupo(idPert);
 			Grupos[idPert].addPoint(points[i]);
-			cout<< endl<<endl<< points[i].getGrupo()<<endl;
 		}
 
 		for(int i=0;i < Grupos.size();i++){
-			cout << "Grupo # " << i <<endl;
+			cout << "Grupo # " << i <<endl<<endl;
 			for(int j=0;j < Grupos[i].getTotalPoints();j++){
 				
-				cout<< Grupos[i].getPoint(j).getID() << endl;
-				cout<< Grupos[i].getPoint(j).getGrupo() << endl;
+				cout<< Grupos[i].getPoint(j).getID()<<endl;
 
 			}
 			cout<<endl<<endl;	
@@ -365,6 +362,7 @@ public:
 				if(VecCentro.size()!= 0 and j > 0 ){
 					op=VecCentro.size();
 					for(int l=0;l < op;){
+						//cout << VecCentro[l].second << "   " << Grupos[i].getPoint(j).getPair(k).second<<endl;
 						if(VecCentro[l].second == Grupos[i].getPoint(j).getPair(k).second){
 							VecCentro[l].first+=Grupos[i].getPoint(j).getPair(k).first;
 							k++;
@@ -380,15 +378,18 @@ public:
 
 						}
 
+						if(k >= Grupos[i].getPoint(j).getTotalPeliculas()){
+								break;
+						}
+
 						if(VecCentro[l].second > Grupos[i].getPoint(j).getPair(k).second)
 						{
 							VecCentro.push_back(Grupos[i].getPoint(j).getPair(k));
 							k++;
+
 						}
 
-						if(k >= Grupos[i].getPoint(j).getTotalPeliculas()){
-								break;
-						}
+						
 							
 
 					}
@@ -398,6 +399,8 @@ public:
 
 					for(int n=0;n < Grupos[i].getPoint(j).getTotalPeliculas();n++){
 						VecCentro.push_back(Grupos[i].getPoint(j).getPair(n));
+
+
 						
 					}
 				}
@@ -485,7 +488,7 @@ int LlenarDatos(vector<pair<short,short>>& valores,string linea){
 
 int main()
 {	
-	ifstream archivo_entrada("usuarios.txt");
+	ifstream archivo_entrada("users.txt");
     string linea;
     vector<PointUser> points;
 
