@@ -19,16 +19,20 @@ private:
 	vector<pair<double,double>> values;
 	int total_Peliculas;
 	bool esCentroide;
+	double modulo=0;
 
 public:
 	PointUser(int id_point, vector<pair<double,double>>& valores)
 	{
 		this->id_point = id_point;
 		total_Peliculas = valores.size();
+		int resultado=0;
 
-		for(int i = 0; i < total_Peliculas; i++)
+		for(int i = 0; i < total_Peliculas; i++){
 			this->values.push_back(valores[i]);
-
+			resultado+=values[i].first * values[i].first;
+		}
+		modulo=sqrt(resultado);
 		prev_grupo= -1;
 		id_grupo = -1;
 		esCentroide=false;
@@ -37,6 +41,10 @@ public:
 	int getID()
 	{
 		return id_point;
+	}
+	double getModulo()
+	{
+		return modulo;
 	}
 
 	void setGrupo(int id_grupo)
@@ -90,6 +98,7 @@ private:
 	vector<PointUser> points;
 	int popo;
 	int total_Peliculas;
+	double modulo=0;
 
 public:
 	Grupo(int id_grupo, PointUser point)
@@ -101,6 +110,8 @@ public:
 
 		for(int i = 0; i < total_Peliculas; i++)
 			centroide.push_back(point.getPair(i));
+
+		modulo=point.getModulo();
 
 	}
 
@@ -117,10 +128,13 @@ public:
 
 	void nuevoCentroide(vector<pair<double,double>> vectorcito){
 		centroide.clear();
-
+		double resultado=0;
 		for (int i=0; i < vectorcito.size(); i++){
 			centroide.push_back(vectorcito[i]);
+			resultado+=centroide[i].first * centroide[i].first;
 		}
+
+		modulo=sqrt(resultado);
 
 	}
 
@@ -136,6 +150,11 @@ public:
 	PointUser getPoint(int index)
 	{
 		return points[index];
+	}
+
+	double getModulo()
+	{
+		return modulo;
 	}
 
 	int getTotalPoints()
@@ -173,19 +192,6 @@ public:
 		this->K = K;
 		this->total_Peliculas = total_Peliculas;
 		this->total_Usuarios = total_Usuarios;
-	}
-
-	double ModuloP(PointUser p){
-
-		int resultado=0;
-		vector<pair<double,double>> punto;
-		punto=p.getValues();
-		for(int i=0; i<punto.size();i++){
-			resultado+=punto[i].first * punto[i].first;
-
-		}
-		double res=sqrt(resultado);
-		return res;
 	}
 
 	double ModuloG(Grupo g){
@@ -350,15 +356,16 @@ public:
 				
 				points[i].setPrevGrupo(points[i].getGrupo());
 
-
+				cout <<"inicio"<<endl;
 				double min_angul = 360;
 				for(int j=0;j < Grupos.size();j++){
 
 					//cout << points[i].getID()<< endl;
 					//cout << Grupos[j].getPopo()<< endl<<endl;
+					
 					int r = ProdPunto(points[i], Grupos[j]);
-					double m1 =ModuloP(points[i]);
-					double m2 =ModuloG(Grupos[j]);
+					double m1 = points[i].getModulo();
+					double m2 = Grupos[j].getModulo();
 					float resultado = (r/(m1*m2));
 					float arc= acos(resultado) *180 / M_PI;
 					if(arc < min_angul){
@@ -367,13 +374,14 @@ public:
 
 					}
 				}
+				cout <<"fin"<<endl;
 				points[i].setGrupo(idPert);
 				Grupos[idPert].addPoint(points[i]);
 			}
 
 			
 
-			for(int i=0;i < Grupos.size();i++){
+			/*for(int i=0;i < Grupos.size();i++){
 				cout << "Grupo # " << i <<endl<<endl;
 				for(int j=0;j < Grupos[i].getTotalPoints();j++){
 						
@@ -382,11 +390,13 @@ public:
 				}
 
 				cout<<endl<<endl;	
-			}
+			}*/
 
 			
 			int op=0;
 			vector<pair<double,double>> VecCentro;
+
+			cout << "hola"<<endl;
 
 			for(int i=0;i < Grupos.size();i++){
 				vector<pair<double,double>> VecCentro;
@@ -556,6 +566,6 @@ int main()
 
     }
     cout<<"hola"<<endl;
-    KMeans kmeans(10,1000,16);
+    KMeans kmeans(10,1000,1000);
     kmeans.run(points);
 }
