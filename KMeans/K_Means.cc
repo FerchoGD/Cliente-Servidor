@@ -15,7 +15,7 @@ using namespace std;
 class PointUser
 {
 private:
-	int id_point, id_grupo;
+	int id_point, id_grupo, prev_grupo;
 	vector<pair<double,double>> values;
 	int total_Peliculas;
 	bool esCentroide;
@@ -29,6 +29,7 @@ public:
 		for(int i = 0; i < total_Peliculas; i++)
 			this->values.push_back(valores[i]);
 
+		prev_grupo= -1;
 		id_grupo = -1;
 		esCentroide=false;
 	}
@@ -43,9 +44,19 @@ public:
 		this->id_grupo = id_grupo;
 	}
 
+	void setPrevGrupo(int id)
+	{
+		this->prev_grupo = id;
+	}
+
 	int getGrupo()
 	{
 		return id_grupo;
+	}
+
+	int getPrevGrupo()
+	{
+		return prev_grupo;
 	}
 
 	pair<double,double> getPair(int indice)
@@ -98,26 +109,19 @@ public:
 		points.push_back(point);
 	}
 
-	bool removePoint(int id_point)
+	bool Limpiar()
 	{
-		int total_points = points.size();
-
-		for(int i = 0; i < total_points; i++)
-		{
-			if(points[i].getID() == id_point)
-			{
-				points.erase(points.begin() + i);
-				return true;
-			}
-		}
-		return false;
+		points.clear();
+		return true;
 	}
 
-	void nuevoCentroide(vector<pair<double,double>>& vectorcito){
-		this-> centroide.resize(vectorcito.size());
+	void nuevoCentroide(vector<pair<double,double>> vectorcito){
+		centroide.clear();
+
 		for (int i=0; i < vectorcito.size(); i++){
-			this->centroide[i] = vectorcito[i];
+			centroide.push_back(vectorcito[i]);
 		}
+
 	}
 
 	pair <double,double> getCentralPair(int index)
@@ -292,10 +296,10 @@ public:
 	}
 
 
-	void PromediarCambiar(vector<pair<double,double>>& centro,Grupo grupo){
+	void PromediarCambiar(vector<pair<double,double>>& centro,Grupo& grupo){
 		int numero=grupo.getTotalPoints();
 		for(int i=0; i<centro.size();i++){
-			centro[i].first=centro[i].first/numero;
+			centro[i].first = centro[i].first/numero;
 		}
 		grupo.nuevoCentroide(centro);
 	}
@@ -326,121 +330,154 @@ public:
 			}
 		}
 
+		int iter=1;
+
+
+		while(true)
+		{
 
 		//Asignando cada punto a un centroide
 
-		int idPert;
 
-		for(int i=0;i < points.size();i++){
-			double min_angul = 360;
-			for(int j=0;j < Grupos.size();j++){
+			int idPert;
 
-				//cout << points[i].getID()<< endl;
-				//cout << Grupos[j].getPopo()<< endl<<endl;
-				int r = ProdPunto(points[i], Grupos[j]);
-				double m1 =ModuloP(points[i]);
-				double m2 =ModuloG(Grupos[j]);
-				float resultado = (r/(m1*m2));
-				float arc= acos(resultado) *180 / M_PI;
-				if(arc < min_angul){
-					min_angul = arc;
-					idPert = j;
+
+			cout<<"Iteracion #"<<iter<<endl<<endl;
+
+
+
+			for(int i=0;i < points.size();i++){
+				
+				points[i].setPrevGrupo(points[i].getGrupo());
+
+
+				double min_angul = 360;
+				for(int j=0;j < Grupos.size();j++){
+
+					//cout << points[i].getID()<< endl;
+					//cout << Grupos[j].getPopo()<< endl<<endl;
+					int r = ProdPunto(points[i], Grupos[j]);
+					double m1 =ModuloP(points[i]);
+					double m2 =ModuloG(Grupos[j]);
+					float resultado = (r/(m1*m2));
+					float arc= acos(resultado) *180 / M_PI;
+					if(arc < min_angul){
+						min_angul = arc;
+						idPert = j;
+
+					}
+				}
+				points[i].setGrupo(idPert);
+				Grupos[idPert].addPoint(points[i]);
+			}
+
+			
+
+			for(int i=0;i < Grupos.size();i++){
+				cout << "Grupo # " << i <<endl<<endl;
+				for(int j=0;j < Grupos[i].getTotalPoints();j++){
+						
+					cout<< Grupos[i].getPoint(j).getID()<<endl;
 
 				}
+
+				cout<<endl<<endl;	
 			}
-			points[i].setGrupo(idPert);
-			Grupos[idPert].addPoint(points[i]);
-		}
 
-		for(int i=0;i < Grupos.size();i++){
-			cout << "Grupo # " << i <<endl<<endl;
-			for(int j=0;j < Grupos[i].getTotalPoints();j++){
-				
-				cout<< Grupos[i].getPoint(j).getID()<<endl;
-
-			}
-			cout<<endl<<endl;	
-		}
-
-		
-		int op=0;
-		vector<pair<double,double>> VecCentro;
-
-		for(int i=0;i < 5;i++){
-			vector<pair<double,double>> VecCentro;
-			//Grupos[i].getTotalPoints()
-			int l;
-			int k=0;
-			for(int j=0;j <Grupos[i].getTotalPoints();j++){
 			
-				if(VecCentro.size()!= 0 and j > 0 ){
-					op=VecCentro.size();
-					for(int l=0;l < op;){
-						//cout << VecCentro[l].second << "   " << Grupos[i].getPoint(j).getPair(k).second<<endl;
-						if(VecCentro[l].second == Grupos[i].getPoint(j).getPair(k).second){
-							VecCentro[l].first+=Grupos[i].getPoint(j).getPair(k).first;
-							k++;
-							l++;
-						}
-						
-						if(VecCentro[l].second < Grupos[i].getPoint(j).getPair(k).second){
-							l++;
-							/*if(VecCentro[op-1].second < Grupos[i].getPoint(j).getPair(k).second){
+			int op=0;
+			vector<pair<double,double>> VecCentro;
+
+			for(int i=0;i < Grupos.size();i++){
+				vector<pair<double,double>> VecCentro;
+				//Grupos[i].getTotalPoints()
+				int l;
+				int k=0;
+				for(int j=0;j <Grupos[i].getTotalPoints();j++){
+				
+					if(VecCentro.size()!= 0 and j > 0 ){
+						op=VecCentro.size();
+						for(int l=0;l < op;){
+							//cout << VecCentro[l].second << "   " << Grupos[i].getPoint(j).getPair(k).second<<endl;
+							if(VecCentro[l].second == Grupos[i].getPoint(j).getPair(k).second){
+								VecCentro[l].first+=Grupos[i].getPoint(j).getPair(k).first;
+								k++;
+								l++;
+							}
+							
+							if(VecCentro[l].second < Grupos[i].getPoint(j).getPair(k).second){
+								l++;
+								/*if(VecCentro[op-1].second < Grupos[i].getPoint(j).getPair(k).second){
+									VecCentro.push_back(Grupos[i].getPoint(j).getPair(k));
+									k++;
+								}*/
+
+							}
+
+							if(k >= Grupos[i].getPoint(j).getTotalPeliculas()){
+									break;
+							}
+
+							if(VecCentro[l].second > Grupos[i].getPoint(j).getPair(k).second)
+							{
 								VecCentro.push_back(Grupos[i].getPoint(j).getPair(k));
 								k++;
-							}*/
 
-						}
+							}
 
-						if(k >= Grupos[i].getPoint(j).getTotalPeliculas()){
-								break;
-						}
-
-						if(VecCentro[l].second > Grupos[i].getPoint(j).getPair(k).second)
-						{
-							VecCentro.push_back(Grupos[i].getPoint(j).getPair(k));
-							k++;
-
-						}
-
-						
 							
+								
 
+						}
 					}
-				}
 
-				else{
+					else{
 
-					for(int n=0;n < Grupos[i].getPoint(j).getTotalPeliculas();n++){
-						VecCentro.push_back(Grupos[i].getPoint(j).getPair(n));
+						for(int n=0;n < Grupos[i].getPoint(j).getTotalPeliculas();n++){
+							VecCentro.push_back(Grupos[i].getPoint(j).getPair(n));
 
 
-						
+							
+						}
 					}
+					
+					while(k < Grupos[i].getPoint(j).getTotalPeliculas() and Grupos[i].getPoint(j).getPair(k).second > VecCentro[VecCentro.size()-1].second){
+						VecCentro.push_back(Grupos[i].getPoint(j).getPair(k));
+						k++;
+					}
+					k=0;
+					Ordenar(VecCentro,0,VecCentro.size()-1);
+			
 				}
 				
-				while(k < Grupos[i].getPoint(j).getTotalPeliculas() and Grupos[i].getPoint(j).getPair(k).second > VecCentro[VecCentro.size()-1].second){
-					VecCentro.push_back(Grupos[i].getPoint(j).getPair(k));
-					k++;
+				PromediarCambiar(VecCentro,Grupos[i]);
+
+				cout<<"-----------------------------------------------------------------"<<endl;
+				
+			}
+
+			
+			for(int indice=0;indice < Grupos.size(); indice++){
+				Grupos[indice].Limpiar();
+
+			}
+			
+			bool sigo=false;
+			for(int i=0; i< points.size(); i++){
+				if(points[i].getGrupo() != points[i].getPrevGrupo()){
+					sigo=true;
 				}
-				k=0;
-				Ordenar(VecCentro,0,VecCentro.size()-1);
-		
-			}
-			
-			PromediarCambiar(VecCentro,Grupos[i]);
-			for(int j=0;j < VecCentro.size();j++){
-				cout <<"Vec "<< "("<< VecCentro[j].first<<","<< VecCentro[j].second<<")"<<"-"<<endl;
-				cout <<"Cen "<< "("<< Grupos[i].getCentralPair(j).first<<","<< Grupos[i].getCentralPair(j).second<<")"<<"C"<<endl;
-
 			}
 
-			cout<<"-----------------------------------------------------------------"<<endl;
-			
+			if(!sigo)
+				break;
+
+			iter++;
+
+
+
 		}
 
-
-		
 			
 	}
 	
@@ -519,6 +556,6 @@ int main()
 
     }
     cout<<"hola"<<endl;
-    KMeans kmeans(5,1000,16);
+    KMeans kmeans(10,1000,16);
     kmeans.run(points);
 }
