@@ -394,7 +394,7 @@ public:
 				for(int indice=0; indice<Grupos.size(); indice++){
 					error+=Grupos[indice].getError();
 				}
-				return error;/Grupos.size();
+				return error/Grupos.size();
 			}
 			control=1;
 			iter++;
@@ -461,7 +461,7 @@ int LlenarDatos(vector<pair<double,double>>& valores,string linea){
 
 
 
-void main(){
+int main(){
 	ifstream archivo_entrada("users.txt");
     string linea;
     vector<PointUser> points;
@@ -487,14 +487,19 @@ void main(){
 	const string conexionserver = "tcp://"+ipserver+":4001";
 
 	zmqpp::socket socket_in (ctx, typePull);
-	zmqpp::socket socket_out (ctx, typePull);
+	zmqpp::socket socket_out (ctx, typePush);
 	socket_out.bind(conexion);
 	socket_in.connect(conexionserver);
 	zmqpp::message msg;
-	socket_in.receive(msg)
+	socket_in.receive(msg);
+	string recibido;
+	msg>>recibido;
 
-	KMeans kmeans(msg;,4499,404546);
-    socket_out.send(kmeans.run(points));
+	KMeans kmeans(atoi(recibido.c_str()),4499,404546);
+	double result=kmeans.run(points);
+	zmqpp::message mensaje;
+	mensaje<<result;
+    socket_out.send(mensaje);
 
     socket_in.close();socket_out.close();
 

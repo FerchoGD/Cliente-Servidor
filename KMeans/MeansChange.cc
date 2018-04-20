@@ -24,7 +24,7 @@ void Optimo(){
 	zmqpp::socket_type typePull = zmqpp::socket_type::pull;
 	zmqpp::socket_type typePush = zmqpp::socket_type::push;
 
-	string myip="192.168.8.200";
+	string ip="localhost";
 
 
 
@@ -47,11 +47,11 @@ void Optimo(){
 		for(int i=0; i<elegidos.size();i++){
 
 			//Conexion Server
-			const string serverconexion = "tcp://*:400"+i;
+			const string serverconexion = "tcp://*:4000";
 			zmqpp::socket canalserver (ctx, typePush);
 			zmqpp::socket canalcliente (ctx, typePull);
 			canalserver.bind(serverconexion);
-			canalcliente.connect("tcp://"+myip+":3000");
+			canalcliente.connect("tcp://"+ip+":3000");
 
 			canalserver.send(elegidos[i]);
 			zmqpp::message msg;
@@ -90,7 +90,7 @@ void Optimo(){
 }
 
 
-int main()
+void main()
 {	
 	srand(time(NULL)); 
 	
