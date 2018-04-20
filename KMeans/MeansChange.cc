@@ -253,10 +253,10 @@ public:
 		grupo.nuevoCentroide(centro);
 	}
 
-	void run(vector<PointUser>& points)
+	double run(vector<PointUser>& points)
 	{
 		if(K > total_Usuarios)
-			return;
+			return -1;
 		for(int i = 0; i < K; i++)
 		{
 			while(true)				
@@ -312,8 +312,12 @@ public:
 			cout << "Fin ProdPunto" << endl<<endl;
 			cout << "Inicio Calculo error" << endl;
 			for(int j=0;j < points.size() ;j++){
+				cout<<"Por aqui 1"<<endl;
 				int op = points[j].getGrupo();
+				cout<<"Por aqui 2"<<endl;
+				cout<<"OP es: "<<op<<" ,K es: "<<K<<endl;
 				Grupos[op].addPoint(points[j]);
+				cout<<"Por aqui 3"<<endl;
 				Grupos[op].Error(points[j].getAngulo());
 			}
 			cout << "Fin Calculo error" << endl<<endl;
@@ -385,7 +389,11 @@ public:
 			}*/
 			cout << hol <<endl;
 			if(hol >= K-1){
-				break;
+				double error=0;
+				for(int indice=0; indice<Grupos.size(); indice++){
+					error+=Grupos[indice].getError();
+				}
+				return error;/Grupos.size();
 			}
 			control=1;
 			iter++;
@@ -449,9 +457,14 @@ int LlenarDatos(vector<pair<double,double>>& valores,string linea){
     //}
 }
 
-int main()
-{	
-	srand(time(NULL)); 
+
+
+//Hayando el K-Óptimo
+void Optimo(){
+
+	//KMeans kmeans(5,4499,404546);
+    //kmeans.run(puntos);
+
 	ifstream archivo_entrada("users.txt");
     string linea;
     vector<PointUser> points;
@@ -464,6 +477,57 @@ int main()
     	points.push_back(p);
     }
 
+	int primero=2,segundo=4 ,tercero=sqrt(36);
+	vector<int> elegidos={primero,segundo,tercero};
+	vector<double> kresultados;
+
+	while (true) {
+
+		if(tercero - primero <= 1){
+			cout<<"El K Optimo es: "<<tercero<<endl;
+			break;
+		}
+
+		//Calculando cada uno de los K
+		for(int i=0; i<elegidos.size();i++){
+		KMeans kmeans(elegidos[i],4499,404546);
+    	double kresult=kmeans.run(points);
+    	cout<<"Resultado del K: "<<kresult<<endl;
+    	kresultados.push_back(kresult);		
+		}
+
+		int Kchange=0;
+		double Mchange=0;
+		for(int j=0; j<kresultados.size()-1;j++){
+			double change = abs(kresultados[j+1] - kresultados[j]) ;
+			if(change>Mchange){
+				Kchange=j;
+				Mchange=change;
+			}
+
+		}
+
+		primero=elegidos[Kchange];
+		tercero=elegidos[Kchange++];
+
+		
+		segundo=tercero/2 + 1;
+		elegidos.clear();
+		kresultados.clear();
+		elegidos.push_back(primero);elegidos.push_back(segundo);elegidos.push_back(tercero);
+
+
+	}
+
+	
+}
+
+
+int main()
+{	
+	srand(time(NULL)); 
+	
+
     /*
     cout << "Tamaño de puntos: " << points.size() << endl;
     cout <<  "Ultimo punto" << endl;
@@ -471,8 +535,7 @@ int main()
     	cout << points[114551-1].getPair(i).first << " " << points[114551-1].getPair(i).second << endl;*/
     
     cout<<"hola"<<endl;
-    Timer tTotal;
-    KMeans kmeans(5,4499,470758);
-    kmeans.run(points);
+    Timer tTotal;    
+    Optimo();
     cout << "Tiempo: " << tTotal.elapsed() << endl;
 }
