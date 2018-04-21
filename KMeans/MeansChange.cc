@@ -12,17 +12,27 @@
 #include <zmqpp/zmqpp.hpp>
 
 
+using namespace std;
+using namespace zmqpp;
+
+
 //Hallando el K-Óptimo
 void Optimo(){
 
-	int primero=2,ultimo=20, numeromaquinas=10;
+	int primero=2,ultimo=20, numeromaquinas=10, tamintervalo;
 	
 	vector<int> elegidos;
 	vector<double> kresultados;
-	zmqpp::context ctx;
+	//zmqpp::context ctx;
 
-	zmqpp::socket_type typePull = zmqpp::socket_type::pull;
-	zmqpp::socket_type typePush = zmqpp::socket_type::push;
+	//zmqpp::socket_type typePull = zmqpp::socket_type::pull;
+	//zmqpp::socket_type typePush = zmqpp::socket_type::push;
+
+
+
+  	context ctx;
+  	socket canalserver(ctx,socket_type::rep);
+
 
 	string ip="localhost";
 
@@ -33,7 +43,7 @@ void Optimo(){
 		tamintervalo=ultimo/numeromaquinas;
 		elegidos.push_back(primero);
 		//Eligiendo los K's que necesitamos
-		for(int j=0; j<= numeromaquinas + 1;j++){
+		for(int j=0; j< numeromaquinas ;j++){
 			elegidos.push_back(primero+=tamintervalo);
 		}
 
@@ -47,19 +57,32 @@ void Optimo(){
 		for(int i=0; i<elegidos.size();i++){
 
 			//Conexion Server
+			string kresult;
 			const string serverconexion = "tcp://*:4000";
-			zmqpp::socket canalserver (ctx, typePush);
-			zmqpp::socket canalcliente (ctx, typePull);
 			canalserver.bind(serverconexion);
-			canalcliente.connect("tcp://"+ip+":3000");
 
-			canalserver.send(elegidos[i]);
+			string inicio;
+			zmqpp::message saludo;
+			canalserver.receive(saludo);
+
+			saludo>>inicio;
+			cout<<"Mensaje: "<<inicio<<endl;
+			int puto=elegidos[i];
+			string puntoya= to_string(puto);
+			zmqpp::message enviok;
+			
+			enviok<<puntoya;
+			canalserver.send(enviok);
+
 			zmqpp::message msg;
-			canalcliente.recv(msg);
-    		kresult=msg;
-    		canalcliente.close();canalserver.close();
+			canalserver.receive(msg);
+
+    		msg>>kresult;
+    		
+
     		cout<<"Resultado del K: "<<kresult<<endl;
-    		kresultados.push_back(kresult);		
+    		kresultados.push_back(atoi(kresult.c_str())/1.0);		
+			canalserver.close();
 		}
 
 
@@ -82,15 +105,13 @@ void Optimo(){
 		elegidos.clear();
 		kresultados.clear();
 		
-
-
 	}
 
 	
 }
 
 
-void main()
+int main()
 {	
 	srand(time(NULL)); 
 	

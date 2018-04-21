@@ -12,6 +12,7 @@
 #include <zmqpp/zmqpp.hpp>
 
 using namespace std;
+using namespace zmqpp;
 
 class PointUser
 {
@@ -475,33 +476,42 @@ int main(){
     	points.push_back(p);
     }
 
-    string ipserver="192.168.2.122"; //Momentaneamente
+    string ipserver="localhost"; //Momentaneamente
 
-	zmqpp::context ctx;
-
-	zmqpp::socket_type typePull = zmqpp::socket_type::pull;
-	zmqpp::socket_type typePush = zmqpp::socket_type::push;
+  	context ctx;
+  	//socket socket_out(ctx,socket_type::rep);
+  	socket socket_out(ctx,socket_type::req);
 
 	//Conexion Server
-	const string conexion = "tcp://*:3000";
-	const string conexionserver = "tcp://"+ipserver+":4001";
 
-	zmqpp::socket socket_in (ctx, typePull);
-	zmqpp::socket socket_out (ctx, typePush);
-	socket_out.bind(conexion);
-	socket_in.connect(conexionserver);
-	zmqpp::message msg;
-	socket_in.receive(msg);
+	const string conexionserver = "tcp://"+ipserver+":4000";
+
+
+	socket_out.connect(conexionserver);
+	string saludo="oe";
+	zmqpp::message iniciando;
+	iniciando<<saludo;
+	cout<<"Saludando"<<endl;
+	socket_out.send(iniciando);
 	string recibido;
-	msg>>recibido;
+	zmqpp::message msg;
+	cout<<"Recibiendo K"<<endl;
+	socket_out.receive(msg);
+	cout<<"K recibido"<<endl;
 
+	msg>>recibido;
+	cout<<"El k recibido es: "<<recibido<<endl;
+
+
+
+	cout<<"Ejecutando K"<<endl;
 	KMeans kmeans(atoi(recibido.c_str()),4499,404546);
 	double result=kmeans.run(points);
 	zmqpp::message mensaje;
 	mensaje<<result;
+	cout<<"resultado: "<<result<<endl;
     socket_out.send(mensaje);
 
-    socket_in.close();socket_out.close();
-
+    socket_out.close();
 
 }
