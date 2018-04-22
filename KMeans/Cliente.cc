@@ -314,12 +314,9 @@ public:
 			cout << "Fin ProdPunto" << endl<<endl;
 			cout << "Inicio Calculo error" << endl;
 			for(int j=0;j < points.size() ;j++){
-				cout<<"Por aqui 1"<<endl;
 				int op = points[j].getGrupo();
-				cout<<"Por aqui 2"<<endl;
 				cout<<"OP es: "<<op<<" ,K es: "<<K<<endl;
 				Grupos[op].addPoint(points[j]);
-				cout<<"Por aqui 3"<<endl;
 				Grupos[op].Error(points[j].getAngulo());
 			}
 			cout << "Fin Calculo error" << endl<<endl;
@@ -393,7 +390,8 @@ public:
 			if(hol >= K-1){
 				double error=0;
 				for(int indice=0; indice<Grupos.size(); indice++){
-					error+=Grupos[indice].getError();
+
+					error+=Grupos[indice].getErrorPre();
 				}
 				return error/Grupos.size();
 			}
@@ -490,7 +488,7 @@ int main(){
 	socket_out.connect(conexionserver);
 	string saludo="oe";
 	zmqpp::message iniciando;
-	iniciando<<saludo;
+	iniciando << saludo;
 	cout<<"Saludando"<<endl;
 	socket_out.send(iniciando);
 	string recibido;
@@ -499,19 +497,22 @@ int main(){
 	socket_out.receive(msg);
 	cout<<"K recibido"<<endl;
 
-	msg>>recibido;
+	msg >> recibido;
 	cout<<"El k recibido es: "<<recibido<<endl;
 
 
 
 	cout<<"Ejecutando K"<<endl;
 	KMeans kmeans(atoi(recibido.c_str()),4499,404546);
-	double result=kmeans.run(points);
+	string result=to_string(kmeans.run(points));
 	zmqpp::message mensaje;
-	mensaje<<result;
+	mensaje << result;
 	cout<<"resultado: "<<result<<endl;
     socket_out.send(mensaje);
 
-    socket_out.close();
+    zmqpp::message bye;
+    socket_out.receive(bye);
+
+    socket_out.disconnect(conexionserver);
 
 }
