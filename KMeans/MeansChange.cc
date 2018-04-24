@@ -10,11 +10,49 @@
 #include <cstdlib>
 #include "timer.hh"
 #include <zmqpp/zmqpp.hpp>
+#include <thread>
 
 
 using namespace std;
 using namespace zmqpp;
 
+
+
+//Funcion para ejecutar el hilo
+
+void Server(socket &canalserver, vector<int>& Kelegidos, vector<double>& resultados, int indice){
+
+
+
+	string inicio;
+	zmqpp::message saludo;
+	canalserver.receive(saludo);
+
+	saludo >> inicio;
+	cout<<"Mensaje: "<<inicio<<endl;
+	int ksito=Kelegidos[indice];
+	string puntoya= to_string(ksito);
+	zmqpp::message enviok;
+	
+	enviok << puntoya;
+	canalserver.send(enviok);
+
+	string kresult;
+	zmqpp::message msg;
+	canalserver.receive(msg);
+
+	msg >> kresult;
+	
+	string chao="Bye";
+	zmqpp::message despido;
+	despido << chao;
+	canalserver.send(despido);
+
+	cout<<"Resultado del K: "<<kresult<<endl;
+	cout<<"Push back de: "<<atof(kresult.c_str())<<endl;
+	if(atof(kresult.c_str())>0)
+		resultados.push_back(atof(kresult.c_str()));		
+}
 
 //Hallando el K-Óptimo
 void Optimo(){
@@ -32,10 +70,10 @@ void Optimo(){
 
   	context ctx;
 
-
-	socket canalserver(ctx,socket_type::rep);
+	socket servidor(ctx,socket_type::rep);
 	const string serverconexion = "tcp://*:4000";
-	canalserver.bind(serverconexion);
+	servidor.bind(serverconexion);
+	
 
 
 
@@ -60,44 +98,20 @@ void Optimo(){
 		
 
 		//Calculando cada uno de los K
-		#pragma omp parallel for
-		for(int i=0; i<elegidos.size();i++){
+
+		
+		for(int i=0; i<elegidos.size();){
 
 			//Intercambio de datos
-
-			
-
-			string inicio;
-			zmqpp::message saludo;
-			canalserver.receive(saludo);
-
-			saludo >> inicio;
-			cout<<"Mensaje: "<<inicio<<endl;
-			int puto=elegidos[i];
-			string puntoya= to_string(puto);
-			zmqpp::message enviok;
-			
-			enviok << puntoya;
-			canalserver.send(enviok);
-
-			string kresult;
-			zmqpp::message msg;
-			canalserver.receive(msg);
-
-    		msg >> kresult;
-    		
-    		string chao="Bye";
-    		zmqpp::message despido;
-    		despido << chao;
-    		canalserver.send(despido);
-
-    		cout<<"Resultado del K: "<<kresult<<endl;
-    		cout<<"Push back de: "<<atof(kresult.c_str())<<endl;
-    		kresultados.push_back(atof(kresult.c_str()));		
+			if(elegidos[i]!=0){
+				thread thread_server;
+				thread_server = thread(Server, ref(servidor), ref(elegidos), ref(kresultados), i);
+				thread_server.join();
+				i++;
+			}			
 
 		}
 
-		canalserver.close();
 
 
 		//Mirando el cambio de pendiente

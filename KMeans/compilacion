@@ -1,0 +1,2 @@
+g++ -std=c++11 -o list Cliente.cc -lzmq -lzmqpp
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:usr/local/lib/
