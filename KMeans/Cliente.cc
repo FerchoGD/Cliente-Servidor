@@ -257,8 +257,8 @@ public:
 
 	double run(vector<PointUser>& points)
 	{
-		if(K > total_Usuarios)
-			return -1;
+		if(K > total_Usuarios or K==0)
+			return 0;
 		for(int i = 0; i < K; i++)
 		{
 			while(true)				
@@ -315,7 +315,7 @@ public:
 			cout << "Inicio Calculo error" << endl;
 			for(int j=0;j < points.size() ;j++){
 				int op = points[j].getGrupo();
-				cout<<"OP es: "<<op<<" ,K es: "<<K<<endl;
+				//cout<<"OP es: "<<op<<" ,K es: "<<K<<endl;
 				Grupos[op].addPoint(points[j]);
 				Grupos[op].Error(points[j].getAngulo());
 			}
@@ -486,33 +486,40 @@ int main(){
 
 
 	socket_out.connect(conexionserver);
+
 	string saludo="oe";
 	zmqpp::message iniciando;
 	iniciando << saludo;
 	cout<<"Saludando"<<endl;
 	socket_out.send(iniciando);
-	string recibido;
-	zmqpp::message msg;
-	cout<<"Recibiendo K"<<endl;
-	socket_out.receive(msg);
-	cout<<"K recibido"<<endl;
-
-	msg >> recibido;
-	cout<<"El k recibido es: "<<recibido<<endl;
+	
+	while(true){
 
 
 
-	cout<<"Ejecutando K"<<endl;
-	KMeans kmeans(atoi(recibido.c_str()),4499,404546);
-	string result=to_string(kmeans.run(points));
-	zmqpp::message mensaje;
-	mensaje << result;
-	cout<<"resultado: "<<result<<endl;
-    socket_out.send(mensaje);
+		string recibido;
+		zmqpp::message msg;
+		cout<<"Recibiendo K"<<endl;
+		socket_out.receive(msg);
+		cout<<"K recibido"<<endl;
 
-    zmqpp::message bye;
-    socket_out.receive(bye);
+		msg >> recibido;
+		cout<<"El k recibido es: "<<recibido<<endl;
 
-    socket_out.disconnect(conexionserver);
+		string result;
 
+		if(recibido != "Bye"){
+			KMeans kmeans(atoi(recibido.c_str()),4499,404546);
+			result=to_string(kmeans.run(points));
+		}
+		else
+			result=to_string(0);
+		zmqpp::message mensaje;
+		mensaje << result;
+		cout<<"resultado: "<<result<<endl;
+	    socket_out.send(mensaje);
+
+	    //zmqpp::message bye;
+	    //socket_out.receive(bye);
+	}
 }

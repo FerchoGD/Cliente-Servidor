@@ -16,43 +16,55 @@
 using namespace std;
 using namespace zmqpp;
 
-
-
 //Funcion para ejecutar el hilo
 
-void Server(socket &canalserver, vector<int>& Kelegidos, vector<double>& resultados, int indice){
-
-
+void Server(socket &canalserver, vector<int>& Kelegidos, vector<double>& resultados, int &indice){
 
 	string inicio;
 	zmqpp::message saludo;
 	canalserver.receive(saludo);
-
 	saludo >> inicio;
 	cout<<"Mensaje: "<<inicio<<endl;
-	int ksito=Kelegidos[indice];
-	string puntoya= to_string(ksito);
-	zmqpp::message enviok;
-	
-	enviok << puntoya;
-	canalserver.send(enviok);
 
-	string kresult;
-	zmqpp::message msg;
-	canalserver.receive(msg);
+	while(true and indice<Kelegidos.size()){
 
-	msg >> kresult;
-	
-	string chao="Bye";
-	zmqpp::message despido;
-	despido << chao;
-	canalserver.send(despido);
 
-	cout<<"Resultado del K: "<<kresult<<endl;
-	cout<<"Push back de: "<<atof(kresult.c_str())<<endl;
-	if(atof(kresult.c_str())>0)
-		resultados.push_back(atof(kresult.c_str()));		
+
+		int ksito=Kelegidos[indice];
+		string puntoya= to_string(ksito);
+		zmqpp::message enviok;
+		
+		enviok << puntoya;
+		canalserver.send(enviok);
+
+		string kresult;
+		zmqpp::message msg;
+		canalserver.receive(msg);
+
+		msg >> kresult;
+
+		if(kresult!="oe"){
+		
+			string chao="Bye";
+			zmqpp::message despido;
+			despido << chao;
+			//canalserver.send(despido);
+
+			cout<<"Resultado del K: "<<kresult<<endl;
+			cout<<"Push back de: "<<atof(kresult.c_str())<<endl;
+			if(atof(kresult.c_str())>0)
+			{
+				resultados.push_back(atof(kresult.c_str()));
+				indice++;		
+			}
+
+		}
+		else{
+			indice++;
+		}
+	}
 }
+
 
 //Hallando el K-Óptimo
 void Optimo(){
@@ -79,6 +91,8 @@ void Optimo(){
 
 	while (true) {
 
+		
+
 		if(ultimo - primero < numeromaquinas){
 			cout<<"El K Optimo es: "<<elegidos[0]<<endl;
 			break;
@@ -95,21 +109,18 @@ void Optimo(){
 		}
 
 
-		
-
 		//Calculando cada uno de los K
 
 		
 		for(int i=0; i<elegidos.size();){
 
 			//Intercambio de datos
-			if(elegidos[i]!=0){
-				thread thread_server;
-				thread_server = thread(Server, ref(servidor), ref(elegidos), ref(kresultados), i);
-				thread_server.join();
-				i++;
-			}			
 
+			thread thread_server;
+			thread_server = thread(Server, ref(servidor), ref(elegidos), ref(kresultados), ref(i));
+			thread_server.join();
+
+			
 		}
 
 
