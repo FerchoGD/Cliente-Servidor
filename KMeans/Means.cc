@@ -332,11 +332,7 @@ public:
 				}
 				//cout <<"Cantidad de puntos "<< Grupos[i].getTotalPoints()<<endl;
 				//cout << "Tiempo: " << ts.elapsed() << endl;	
-				for(int m=0; m<17771;m++){
-					VecCentro[m]= VecCentro[m]/Grupos[i].getTotalPoints();
-				}
-
-				Grupos[i].nuevoCentroide(VecCentro);
+				PromediarCambiar(VecCentro,Grupos[i]);
 				
 			}
 
@@ -357,11 +353,15 @@ public:
 			}
 			
 			cout << hol <<endl;
-			if(hol >= K-1){
+			if(hol >= K){
 				double error=0;
 				for(int indice=0; indice<Grupos.size(); indice++){
 
 					error+=Grupos[indice].getErrorPre();
+				}
+
+				for (int j=0; j < 10; j++){
+					cout<<"Punto: "<<points[j].getID()<<" Grupo: "<<points[j].getGrupo()<<endl;
 				}
 				return error/Grupos.size();
 			}
@@ -445,52 +445,12 @@ int main(){
     	points.push_back(p);
     }
 
-    string ipserver="localhost"; //Momentaneamente
 
-  	context ctx;
-  	//socket socket_out(ctx,socket_type::rep);
-  	socket socket_out(ctx,socket_type::req);
+    Timer tTotal;    
 
-	//Conexion Server
-
-	const string conexionserver = "tcp://"+ipserver+":4000";
+    KMeans kmeans(30,4499,404546);
+    kmeans.run(points);
+    cout << "Tiempo: " << tTotal.elapsed() << endl;
 
 
-	socket_out.connect(conexionserver);
-
-	string saludo="oe";
-	zmqpp::message iniciando;
-	iniciando << saludo;
-	cout<<"Saludando"<<endl;
-	socket_out.send(iniciando);
-	
-	while(true){
-
-
-
-		string recibido;
-		zmqpp::message msg;
-		cout<<"Recibiendo K"<<endl;
-		socket_out.receive(msg);
-		cout<<"K recibido"<<endl;
-
-		msg >> recibido;
-		cout<<"El k recibido es: "<<recibido<<endl;
-
-		string result;
-
-		if(recibido != "Bye"){
-			KMeans kmeans(atoi(recibido.c_str()),4499,404546);
-			result=to_string(kmeans.run(points));
-		}
-		else
-			result=to_string(0);
-		zmqpp::message mensaje;
-		mensaje << result;
-		cout<<"resultado: "<<result<<endl;
-	    socket_out.send(mensaje);
-
-	    //zmqpp::message bye;
-	    //socket_out.receive(bye);
-	}
 }

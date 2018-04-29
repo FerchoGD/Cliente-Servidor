@@ -18,13 +18,15 @@ using namespace zmqpp;
 
 //Funcion para ejecutar el hilo
 
-void Server(socket &canalserver, vector<int>& Kelegidos, vector<double>& resultados, int &indice){
+void Server(socket &canalserver, vector<int>& Kelegidos, vector<double>& resultados, int &indice, string& verificar){
 
-	string inicio;
-	zmqpp::message saludo;
-	canalserver.receive(saludo);
-	saludo >> inicio;
-	cout<<"Mensaje: "<<inicio<<endl;
+	if(verificar=="primero"){
+		string inicio;
+		zmqpp::message saludo;
+		canalserver.receive(saludo);
+		saludo >> inicio;
+		cout<<"Mensaje: "<<inicio<<endl;
+	}
 
 	while(true and indice<Kelegidos.size()){
 
@@ -69,7 +71,7 @@ void Server(socket &canalserver, vector<int>& Kelegidos, vector<double>& resulta
 //Hallando el K-Óptimo
 void Optimo(){
 
-	int primero=2,ultimo=8, numeromaquinas=4, tamintervalo;
+	int primero=2,ultimo=20, numeromaquinas=2, tamintervalo;
 	
 	vector<int> elegidos;
 	vector<double> kresultados;
@@ -85,6 +87,8 @@ void Optimo(){
 	socket servidor(ctx,socket_type::rep);
 	const string serverconexion = "tcp://*:4000";
 	servidor.bind(serverconexion);
+
+	string saludo="primero";
 	
 
 
@@ -104,9 +108,10 @@ void Optimo(){
 
 		elegidos.push_back(primero);
 		//Eligiendo los K's que necesitamos
-		for(int j=0; j< numeromaquinas -1 ;j++){
+		for(int j=0; j< numeromaquinas-1 ;j++){
 			elegidos.push_back(primero+=tamintervalo);
 		}
+		elegidos.push_back(ultimo);
 
 
 		//Calculando cada uno de los K
@@ -117,7 +122,7 @@ void Optimo(){
 			//Intercambio de datos
 
 			thread thread_server;
-			thread_server = thread(Server, ref(servidor), ref(elegidos), ref(kresultados), ref(i));
+			thread_server = thread(Server, ref(servidor), ref(elegidos), ref(kresultados), ref(i),ref(saludo));
 			thread_server.join();
 
 			
@@ -139,6 +144,7 @@ void Optimo(){
 
 		primero=elegidos[Kchange];
 		ultimo=elegidos[Kchange+1];
+		saludo="segundo";
 
 
 
