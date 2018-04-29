@@ -18,7 +18,7 @@ using namespace zmqpp;
 
 //Funcion para ejecutar el hilo
 
-void Server(socket &canalserver, vector<int>& Kelegidos, vector<double>& resultados, int &indice, string& verificar){
+void Server(socket &canalserver, vector<int>& Kelegidos, vector<double>& resultados, int &indice, string verificar){
 
 	if(verificar=="primero"){
 		string inicio;
@@ -28,7 +28,7 @@ void Server(socket &canalserver, vector<int>& Kelegidos, vector<double>& resulta
 		cout<<"Mensaje: "<<inicio<<endl;
 	}
 
-	while(true and indice<Kelegidos.size()){
+	while(true){
 
 
 
@@ -52,7 +52,6 @@ void Server(socket &canalserver, vector<int>& Kelegidos, vector<double>& resulta
 			despido << chao;
 			//canalserver.send(despido);
 
-			cout<<"Resultado del K: "<<kresult<<endl;
 			cout<<"Push back de: "<<atof(kresult.c_str())<<endl;
 			if(atof(kresult.c_str())>0)
 			{
@@ -71,7 +70,7 @@ void Server(socket &canalserver, vector<int>& Kelegidos, vector<double>& resulta
 //Hallando el K-Óptimo
 void Optimo(){
 
-	int primero=2,ultimo=20, numeromaquinas=2, tamintervalo;
+	int primero=1,ultimo=20,mitad=ultimo/2;
 	
 	vector<int> elegidos;
 	vector<double> kresultados;
@@ -97,20 +96,19 @@ void Optimo(){
 
 		
 
-		if(ultimo - primero < numeromaquinas){
-			cout<<"El K Optimo es: "<<elegidos[0]<<endl;
+		if(ultimo - primero < 2){
+			cout<<"El K Optimo es: "<<ultimo<<endl;
 			break;
 		}
 
 
 
-		tamintervalo=ultimo/numeromaquinas;
+		mitad=(ultimo-primero)/2 + primero;
+
+		//Eligiendo los K's que necesitamos
 
 		elegidos.push_back(primero);
-		//Eligiendo los K's que necesitamos
-		for(int j=0; j< numeromaquinas-1 ;j++){
-			elegidos.push_back(primero+=tamintervalo);
-		}
+		elegidos.push_back(mitad);
 		elegidos.push_back(ultimo);
 
 
@@ -122,7 +120,7 @@ void Optimo(){
 			//Intercambio de datos
 
 			thread thread_server;
-			thread_server = thread(Server, ref(servidor), ref(elegidos), ref(kresultados), ref(i),ref(saludo));
+			thread_server = thread(Server, ref(servidor), ref(elegidos), ref(kresultados), ref(i),saludo);
 			thread_server.join();
 
 			
