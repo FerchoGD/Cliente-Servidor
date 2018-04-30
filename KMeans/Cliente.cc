@@ -432,19 +432,6 @@ int LlenarDatos(vector<pair<double,double>>& valores,string linea){
 
 int main(){
 	srand(time(NULL)); 
-	ifstream archivo_entrada("users.txt");
-    string linea;
-    vector<PointUser> points;
-    while(getline(archivo_entrada, linea)){
-
-    	vector<pair<double,double>> valores;
-    	int usuario=LlenarDatos(valores,linea);
-
-    	PointUser p(usuario, valores);
-    	//cout<< p.getID() << endl;
-    	points.push_back(p);
-    }
-
     string ipserver="localhost"; //Momentaneamente
 
   	context ctx;
@@ -466,7 +453,18 @@ int main(){
 	
 	while(true){
 
+		ifstream archivo_entrada("users.txt");
+	    string linea;
+	    vector<PointUser> points;
+	    while(getline(archivo_entrada, linea)){
 
+    	vector<pair<double,double>> valores;
+    	int usuario=LlenarDatos(valores,linea);
+
+    	PointUser p(usuario, valores);
+    	//cout<< p.getID() << endl;
+    	points.push_back(p);
+    }
 
 		string recibido;
 		zmqpp::message msg;

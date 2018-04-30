@@ -16,21 +16,15 @@
 using namespace std;
 using namespace zmqpp;
 
+
+mutex counter_mutex;
 //Funcion para ejecutar el hilo
 
-void Server(socket &canalserver, vector<int>& Kelegidos, vector<double>& resultados, int &indice, string verificar){
+void Server(socket &canalserver, vector<int>& Kelegidos, vector<double>& resultados, int &indice){
 
-	if(verificar=="primero"){
-		string inicio;
-		zmqpp::message saludo;
-		canalserver.receive(saludo);
-		saludo >> inicio;
-		cout<<"Mensaje: "<<inicio<<endl;
-	}
+	
 
-	while(true){
-
-
+	while(indice < Kelegidos.size()){
 
 		int ksito=Kelegidos[indice];
 		string puntoya= to_string(ksito);
@@ -42,9 +36,9 @@ void Server(socket &canalserver, vector<int>& Kelegidos, vector<double>& resulta
 		string kresult;
 		zmqpp::message msg;
 		canalserver.receive(msg);
-
 		msg >> kresult;
 
+		counter_mutex.lock();
 		if(kresult!="oe"){
 		
 			string chao="Bye";
@@ -63,6 +57,9 @@ void Server(socket &canalserver, vector<int>& Kelegidos, vector<double>& resulta
 		else{
 			indice++;
 		}
+		counter_mutex.unlock();
+		cout<<std::this_thread::get_id()<<endl;
+		std::this_thread::sleep_for(std::chrono::seconds(2));
 	}
 }
 
@@ -70,15 +67,11 @@ void Server(socket &canalserver, vector<int>& Kelegidos, vector<double>& resulta
 //Hallando el K-Óptimo
 void Optimo(){
 
-	int primero=1,ultimo=20,mitad=ultimo/2;
+	int primero=1,ultimo=50,mitad=ultimo/2;
 	
 	vector<int> elegidos;
+	vector<int> enviados;
 	vector<double> kresultados;
-	//zmqpp::context ctx;
-
-	//zmqpp::socket_type typePull = zmqpp::socket_type::pull;
-	//zmqpp::socket_type typePush = zmqpp::socket_type::push;
-
 
 
   	context ctx;
@@ -86,73 +79,125 @@ void Optimo(){
 	socket servidor(ctx,socket_type::rep);
 	const string serverconexion = "tcp://*:4000";
 	servidor.bind(serverconexion);
+	int i=0;
 
-	string saludo="primero";
-	
-
-
-
-	while (true) {
-
-		
-
-		if(ultimo - primero < 2){
-			cout<<"El K Optimo es: "<<ultimo<<endl;
-			break;
-		}
+	if(ultimo - primero < 2){
+		cout<<"El K Optimo es: "<<ultimo<<endl;
+	}
 
 
 
-		mitad=(ultimo-primero)/2 + primero;
+	mitad=(ultimo-primero)/2 + primero;
 
-		//Eligiendo los K's que necesitamos
+	//Eligiendo los K's que necesitamos
 
-		elegidos.push_back(primero);
-		elegidos.push_back(mitad);
-		elegidos.push_back(ultimo);
+	elegidos.push_back(primero);
+	elegidos.push_back(mitad);
+	elegidos.push_back(ultimo);
 
+	int op=1;
 
-		//Calculando cada uno de los K
+	while(true){
 
 		
-		for(int i=0; i<elegidos.size();){
 
-			//Intercambio de datos
-
-			thread thread_server;
-			thread_server = thread(Server, ref(servidor), ref(elegidos), ref(kresultados), ref(i),saludo);
-			thread_server.join();
-
-			
-		}
+		string inicio;
+		zmqpp::message saludo;
+		servidor.receive(saludo);
+		saludo >> inicio;
+		cout<<"Mensaje: "<<inicio<<endl;
 
 
+		if(inicio == "oe"){
 
-		//Mirando el cambio de pendiente
-		int Kchange=0;
-		double Mchange=0;
-		for(int j=0; j<kresultados.size()-1;j++){
-			double change = (kresultados[j+1] - kresultados[j]) / (elegidos[j+1] - elegidos[j]) ;
-			if(change>Mchange){
-				Kchange=j;
-				Mchange=change;
+			cout<<"Aqui estoy"<<endl;
+
+			if(i<elegidos.size()){
+				int ksito=elegidos[i];
+				string puntoya= to_string(ksito);
+				zmqpp::message enviok;
+				enviados.push_back(elegidos[i]);
+				enviok << puntoya;
+				servidor.send(enviok);
 			}
 
 		}
+		else{
 
-		primero=elegidos[Kchange];
-		ultimo=elegidos[Kchange+1];
-		saludo="segundo";
+			cout<<"Push back de: "<<atof(inicio.c_str())<<endl;
+			if(atof(inicio.c_str())>0)
+			{
+				kresultados.push_back(atof(inicio.c_str()));	
+			}
+			if(enviados[enviados.size()-1] != elegidos[elegidos.size()-1]){
+				if(kresultados.size() < elegidos.size()){
+					int ksito=elegidos[i];
+					string puntoya= to_string(ksito);
+					zmqpp::message enviok;
+					enviados.push_back(elegidos[i]);
+					enviok << puntoya;
+					servidor.send(enviok);
+				
+				}
+			}
+		}
+		i++;
+		int parte1,parte2,parte3;
+		//cout<<"Tam elegidos: "<<elegidos.size()<<endl;
+		//cout<<"Tam resultados: "<<kresultados.size()<<endl;
+		if(enviados[enviados.size()-1] == elegidos[elegidos.size()-1]){
 
+			if (op == 1){
+				if(kresultados[0]-kresultados[1] > kresultados[1]-kresultados[2]){
+					parte1=elegidos[1]/2;
+					parte2=parte1-parte1/2;
+					parte3=parte1+parte1/2;
+			
+				}
+				else{
+					parte1=elegidos[1]+elegidos[1]/2;
+					parte2=elegidos[1]+elegidos[1]/4;
+					parte3=parte1-elegidos[1]/4;
+				}
+				elegidos.clear();
+				kresultados.clear();
+				enviados.clear();
+				elegidos.push_back(parte2);
+				elegidos.push_back(parte1);
+				elegidos.push_back(parte3);
+				op=2;
+			}
+			else{
+				mitad=kresultados[1];
+				int Kchange=0;
+				double Mchange=0;
+				for(int j=0; j<kresultados.size()-1;j++){
+					double change = (kresultados[j+1] - kresultados[j]) / (elegidos[j+1] - elegidos[j]);
+					if(change>Mchange){
+						Kchange=j;
+						Mchange=change;
+					}
+				}
+				primero=elegidos[Kchange];
+				ultimo=elegidos[Kchange+1];
+				elegidos.clear();
+				kresultados.clear();
+				enviados.clear();
+				elegidos.push_back(primero);
+				elegidos.push_back(mitad);
+				elegidos.push_back(ultimo);
 
+			}
 
+			i=0;
+		}
 
-		elegidos.clear();
-		kresultados.clear();
 		
-	}
 
-	
+			
+		
+
+	}
 }
 
 
