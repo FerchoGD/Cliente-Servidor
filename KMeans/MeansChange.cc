@@ -18,66 +18,52 @@ using namespace zmqpp;
 
 
 mutex counter_mutex;
-//Funcion para ejecutar el hilo
-
-void Server(socket &canalserver, vector<int>& Kelegidos, vector<double>& resultados, int &indice){
-
-	
-
-	while(indice < Kelegidos.size()){
-
-		int ksito=Kelegidos[indice];
-		string puntoya= to_string(ksito);
-		zmqpp::message enviok;
-		
-		enviok << puntoya;
-		canalserver.send(enviok);
-
-		string kresult;
-		zmqpp::message msg;
-		canalserver.receive(msg);
-		msg >> kresult;
-
-		counter_mutex.lock();
-		if(kresult!="oe"){
-		
-			string chao="Bye";
-			zmqpp::message despido;
-			despido << chao;
-			//canalserver.send(despido);
-
-			cout<<"Push back de: "<<atof(kresult.c_str())<<endl;
-			if(atof(kresult.c_str())>0)
-			{
-				resultados.push_back(atof(kresult.c_str()));
-				indice++;		
-			}
-
-		}
-		else{
-			indice++;
-		}
-		counter_mutex.unlock();
-		cout<<std::this_thread::get_id()<<endl;
-		std::this_thread::sleep_for(std::chrono::seconds(2));
+int parte1,parte2,parte3,parte4,parte5,parte6;
+void Repartir(vector <int> &elegidos,vector <int> &enviados, vector<pair <double,int>> &kresultados){
+		parte1=elegidos[1]/2;
+		parte2=parte1-parte1/2;
+		parte3=parte1+parte1/2;
+		parte4=elegidos[1]+elegidos[1]/2;
+		parte5=elegidos[1]+elegidos[1]/4;
+		parte6=parte4+elegidos[1]/4;
+		elegidos.clear();
+		enviados.clear();
+		kresultados.clear();
+		elegidos.push_back(parte2);
+		elegidos.push_back(parte1);
+		elegidos.push_back(parte3);
+		elegidos.push_back(parte4);
+		elegidos.push_back(parte5);
+		elegidos.push_back(parte6);
 	}
-}
 
+bool verificar(vector<pair <double,int>> &kdos,int &ultimo){
+
+	for(int i=0;i< kdos.size();i++){
+		if(kdos[i].second == ultimo){
+			return true;
+		}
+	}
+	return false;
+}
 
 //Hallando el K-Óptimo
 void Optimo(){
 
-	int primero=1,ultimo=50,mitad=ultimo/2;
+	int primero=1,ultimo=20,mitad=ultimo/2;
 	
 	vector<int> elegidos;
 	vector<int> enviados;
-	vector<double> kresultados;
+	vector<pair <double,int>> kresultados;
+	vector<pair <double,int>> kdos;
+
+	pair<double,int> pareja;
 
 
   	context ctx;
 
 	socket servidor(ctx,socket_type::rep);
-	const string serverconexion = "tcp://*:4000";
+	const string serverconexion = "tcp://*:4002";
 	servidor.bind(serverconexion);
 	int i=0;
 
@@ -96,6 +82,8 @@ void Optimo(){
 	elegidos.push_back(ultimo);
 
 	int op=1;
+	int ca=0;
+	int divi =16; 
 
 	while(true){
 
@@ -105,12 +93,35 @@ void Optimo(){
 		zmqpp::message saludo;
 		servidor.receive(saludo);
 		saludo >> inicio;
-		cout<<"Mensaje: "<<inicio<<endl;
-
-
+		string resultado, k;
+		
+	    for(int t=0;t< inicio.size();t++){
+	    	if(inicio[t]=='-'){
+	    		ca=t+1;
+	    		break;
+	    	}
+	    	else{
+	    		resultado+= inicio[t];
+	    	}
+	    }
+	    for(;ca< inicio.size();ca++){
+	    	if(inicio[ca]==' '){
+	    		break;
+	    	}
+	    	else{
+	    		k+= inicio[ca];
+	    	}
+	    }
+	    pareja.first=atof(resultado.c_str());
+	    pareja.second=atof(k.c_str());
+	    if (inicio != "oe"){
+	    	cout<<"resultado: "<<pareja.first<<endl;
+			cout<<"k: "<<pareja.second<<endl;
+		}
+		
 		if(inicio == "oe"){
 
-			cout<<"Aqui estoy"<<endl;
+			//cout<<"Aqui estoy"<<endl;
 
 			if(i<elegidos.size()){
 				int ksito=elegidos[i];
@@ -126,76 +137,55 @@ void Optimo(){
 
 			cout<<"Push back de: "<<atof(inicio.c_str())<<endl;
 			if(atof(inicio.c_str())>0)
-			{
-				kresultados.push_back(atof(inicio.c_str()));	
+			{	
+				kresultados.push_back(pareja);
+				kdos.push_back(pareja);	
 			}
-			if(enviados[enviados.size()-1] != elegidos[elegidos.size()-1]){
-				if(kresultados.size() < elegidos.size()){
-					int ksito=elegidos[i];
-					string puntoya= to_string(ksito);
-					zmqpp::message enviok;
-					enviados.push_back(elegidos[i]);
-					enviok << puntoya;
-					servidor.send(enviok);
+			int ksito;
+			bool a=verificar(kdos,elegidos[i]);
+			if (a)
+				ksito=elegidos[i+1];
+			else
+				ksito=elegidos[i];
+			string puntoya= to_string(ksito);
+			zmqpp::message enviok;
+			enviados.push_back(elegidos[i]);
+			enviok << puntoya;
+			servidor.send(enviok);
+			
 				
-				}
-			}
+			
 		}
 		i++;
-		int parte1,parte2,parte3;
 		//cout<<"Tam elegidos: "<<elegidos.size()<<endl;
 		//cout<<"Tam resultados: "<<kresultados.size()<<endl;
 		if(enviados[enviados.size()-1] == elegidos[elegidos.size()-1]){
 
 			if (op == 1){
-				if(kresultados[0]-kresultados[1] > kresultados[1]-kresultados[2]){
-					parte1=elegidos[1]/2;
-					parte2=parte1-parte1/2;
-					parte3=parte1+parte1/2;
-			
-				}
-				else{
-					parte1=elegidos[1]+elegidos[1]/2;
-					parte2=elegidos[1]+elegidos[1]/4;
-					parte3=parte1-elegidos[1]/4;
-				}
-				elegidos.clear();
-				kresultados.clear();
-				enviados.clear();
-				elegidos.push_back(parte2);
-				elegidos.push_back(parte1);
-				elegidos.push_back(parte3);
+
+				Repartir(elegidos,enviados,kresultados);
 				op=2;
 			}
 			else{
-				mitad=kresultados[1];
-				int Kchange=0;
-				double Mchange=0;
-				for(int j=0; j<kresultados.size()-1;j++){
-					double change = (kresultados[j+1] - kresultados[j]) / (elegidos[j+1] - elegidos[j]);
-					if(change>Mchange){
-						Kchange=j;
-						Mchange=change;
+				if(verificar(kdos,ultimo)){
+
+					int aux=ultimo/divi;
+					int ban=aux;
+					if (aux < 1)
+						break;
+					elegidos.clear();
+					kresultados.clear();
+					enviados.clear();
+					for(int i=0;i<divi;i++){
+						cout<< aux <<"  aux "<< endl;
+						elegidos.push_back(aux);
+						aux=aux+ban;
 					}
 				}
-				primero=elegidos[Kchange];
-				ultimo=elegidos[Kchange+1];
-				elegidos.clear();
-				kresultados.clear();
-				enviados.clear();
-				elegidos.push_back(primero);
-				elegidos.push_back(mitad);
-				elegidos.push_back(ultimo);
-
 			}
 
 			i=0;
 		}
-
-		
-
-			
-		
 
 	}
 }
@@ -205,12 +195,6 @@ int main()
 {	
 	srand(time(NULL)); 
 	
-
-    /*
-    cout << "Tamaño de puntos: " << points.size() << endl;
-    cout <<  "Ultimo punto" << endl;
-    for(int i = 0; i < points[114551-1].getTotalPeliculas(); i++)
-    	cout << points[114551-1].getPair(i).first << " " << points[114551-1].getPair(i).second << endl;*/
     
     Timer tTotal;    
     Optimo();

@@ -363,7 +363,7 @@ public:
 
 					error+=Grupos[indice].getErrorPre();
 				}
-				return error/Grupos.size();
+				return error;
 			}
 			control=1;
 			iter++;
@@ -440,7 +440,7 @@ int main(){
 
 	//Conexion Server
 
-	const string conexionserver = "tcp://"+ipserver+":4000";
+	const string conexionserver = "tcp://"+ipserver+":4002";
 
 
 	socket_out.connect(conexionserver);
@@ -483,9 +483,10 @@ int main(){
 		}
 		else
 			result=to_string(0);
+		string resultado = result +"-"+ recibido.c_str()+" ";
 		zmqpp::message mensaje;
-		mensaje << result;
-		cout<<"resultado: "<<result<<endl;
+		mensaje << resultado ;
+		cout<<"resultado: "<<resultado<<endl;
 	    socket_out.send(mensaje);
 
 	    //zmqpp::message bye;
