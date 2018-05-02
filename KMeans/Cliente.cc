@@ -280,9 +280,8 @@ public:
 		{
 		//Asignando cada punto a un centroide
 			int idPert;
-
-			cout<<"Iteracion #"<<iter<<endl<<endl;
-			cout << "Inicio ProdPunto" << endl;
+			cout<<"Iteracion #"<<iter<<endl;
+			//cout << "Inicio ProdPunto" << endl;
 			Timer t;
 			#pragma omp parallel for
 			for(int i=0;i < Grupos.size();i++){
@@ -307,20 +306,20 @@ public:
 				//cout << Grupos[idPert].getError()<<endl;
 				//cout << " grupo centroide  "<< Grupos[idPert].getidpGrupo() <<endl;
 			}
-			cout << "Tiempo: " << t.elapsed() << endl;
+			//cout << "Tiempo: " << t.elapsed() << endl;
 
-			cout << "Fin ProdPunto" << endl<<endl;
-			cout << "Inicio Calculo error" << endl;
+			//cout << "Fin ProdPunto" << endl<<endl;
+			//cout << "Inicio Calculo error" << endl;
 			for(int j=0;j < points.size() ;j++){
 				int op = points[j].getGrupo();
 				//cout<<"OP es: "<<op<<" ,K es: "<<K<<endl;
 				Grupos[op].addPoint(points[j]);
 				Grupos[op].Error(points[j].getAngulo());
 			}
-			cout << "Fin Calculo error" << endl<<endl;
+			//cout << "Fin Calculo error" << endl<<endl;
 			
-			cout << "Inicio Nuevo centroide" << endl;
-			Timer tss;
+			//cout << "Inicio Nuevo centroide" << endl;
+			
 			for(int i=0;i < Grupos.size();i++){
 				vector<double> VecCentro(17771,0);
 				//Timer ts;
@@ -342,14 +341,14 @@ public:
 				
 			}
 
-			cout << "Tiempo global: " << tss.elapsed() << endl;
-			cout << "Fin Nuevo centroide" << endl;
+			
+			//cout << "Fin Nuevo centroide" << endl;
 			int hol=0;
 			for(int indice=0;indice < Grupos.size(); indice++){
 				Grupos[indice].ErrorDiv();
 				if(control==1){
 					//cout << "Error pre  "<< Grupos[indice].getErrorPre() << "  Error Act  "<< Grupos[indice].getError()<<endl;
-					if(Grupos[indice].getErrorPre()-Grupos[indice].getError() < 5){
+					if(Grupos[indice].getErrorPre()-Grupos[indice].getError() < 2){
 						hol++;
 					}
 				}
@@ -464,23 +463,25 @@ int main(){
 
 		string recibido;
 		zmqpp::message msg;
-		cout<<"Recibiendo K"<<endl;
 		socket_out.receive(msg);
-		cout<<"K recibido"<<endl;
 		msg >> recibido;
-		cout<<"El k recibido es: ------------------>"<<recibido<<endl;
+		cout<<"El k recibido es: ----------->"<<recibido<<endl<<endl;
 		string result;
 
 		if(recibido != "bye"){
+
+			Timer tss;
 			KMeans kmeans(atoi(recibido.c_str()),4499,404546);
 			result=to_string(kmeans.run(points));
+			cout<<endl;
+			cout << "Tiempo global: " << tss.elapsed() << endl;
 		}
 		else
 			break;
 		string resultado = result +"-"+ recibido.c_str()+" ";
 		zmqpp::message mensaje;
 		mensaje << resultado ;
-		cout<<"resultado: "<<resultado<<endl;
+		cout<<"resultado: "<<resultado<<endl<<endl;
 	    socket_out.send(mensaje);
 
 	    //zmqpp::message bye;

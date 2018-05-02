@@ -31,7 +31,6 @@ bool evaluar(vector <int> &elegidos,vector <int> &enviados,vector <double> &kres
 		valor2=Var2-45;
 	else
 		valor2=45-Var2;
-	cout<< valor1<<"--------------------------------"<<valor2<<endl;
 	if(valor1 <= valor2){
 		ultimo=mitad;
 		mitad=ultimo/2;
@@ -46,7 +45,7 @@ bool evaluar(vector <int> &elegidos,vector <int> &enviados,vector <double> &kres
 	int ban=aux;
 	if (aux <= 1)
 		return true;
-	cout << "ultimo "<<ultimo<< "Mitad " <<mitad <<"  divi "<<divi<<" aux --------"<< aux <<endl;
+	cout << "ultimo: "<<ultimo<<" ----- "<< "Mitad: " <<mitad <<"------"<< " aux: "<< aux <<endl;
 	for(int i=0;primero + aux<ultimo;i++){
 		//cout<< aux <<"  aux "<< endl;
 		elegidos.push_back(aux);
@@ -132,7 +131,7 @@ void mensajeRec(pair <double,int> &pareja,int &banMensaje, string&k, string &res
 	cout<<"k: "<<pareja.second<<endl;
 }
 
-int primero=1,ultimo=20,mitad=ultimo/2;
+int primero=1,ultimo=50,mitad=ultimo/2;
 vector<int> elegidos;
 vector<int> enviados;
 vector<double> kresultados(ultimo+1,0);
@@ -155,12 +154,12 @@ void Optimo(){
 	int op=1;
 	int banMensaje=0;
 	int divi =8; 
-	bool seguir;
 	int banderafinal=0;
+	bool seguir;
+	
 	while(true){
 
-		mostrarVectores(kresultados,enviados,elegidos);
-
+		//mostrarVectores(kresultados,enviados,elegidos);
 		string inicio;
 		zmqpp::message saludo;
 		servidor.receive(saludo);
@@ -180,26 +179,29 @@ void Optimo(){
 		}
 		else{
 			mensajeRec(pareja,banMensaje,k,resultado,inicio);
-			cout<<"Push back de: "<<atof(inicio.c_str())<<endl;
+			//cout<<"Push back de: "<<atof(inicio.c_str())<<endl;
 			kresultados[pareja.second]=pareja.first;
 			int ksito;
 			string puntoya;
-			bool a=verificar(kresultados,elegidos[i]);
-			bool b=verificar2(enviados,elegidos[i]);
-			if (a or b){
-				if(elegidos[i]+1 != ultimo){
-					ksito=elegidos[i+1];
-					enviados.push_back(elegidos[i+1]);
-					i=i+2;
+			for(int p=i;p<elegidos.size();){
+				bool a=verificar(kresultados,elegidos[p]);
+				bool b=verificar2(enviados,elegidos[p]);
+				if (a or b){
+					p++;
+					i=p;
 				}
 				else{
-					enviados.push_back(elegidos[i]);
-				}				
+					i=p;
+					p=elegidos.size();
+				}
 			}
-			else{
-				ksito=elegidos[i];
+			if(i+1 >= elegidos.size()){
+				enviados.push_back(elegidos[elegidos.size()-1]);
+				ksito=primero;
+			}
+			else{		
 				enviados.push_back(elegidos[i]);
-				i++;
+				ksito=elegidos[i];
 			}
 			if(banderafinal==1){
 				puntoya="bye";
@@ -209,12 +211,9 @@ void Optimo(){
 				puntoya= to_string(ksito);
 			zmqpp::message enviok;
 			enviok << puntoya;
-			servidor.send(enviok);
-			
-			
+			servidor.send(enviok);	
 		}
 		if(enviados[enviados.size()-1] == elegidos[elegidos.size()-1]){
-			cout<< "enviado "<<enviados[enviados.size()-1]<<" ele "<<elegidos[elegidos.size()-1]<< endl;
 			if (op == 1){
 				Repartir(elegidos,enviados,ultimo,divi);
 				op=2;	
@@ -225,8 +224,6 @@ void Optimo(){
 					if (seguir){
 						banderafinal=1;
 					}
-						
-					//divi=divi*2;
 				}
 
 			}
@@ -245,6 +242,6 @@ int main()
     
     Timer tTotal;    
     Optimo();
-    mostrarVectores(kresultados,enviados,elegidos);
+    //mostrarVectores(kresultados,enviados,elegidos);
     cout << "Tiempo: " << tTotal.elapsed() << endl;
 }
