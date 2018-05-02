@@ -157,7 +157,10 @@ public:
 	}
 	void ErrorDiv()
 	{	
-		errorMin=errorMin/points.size();
+		if(points.size()==0)
+			errorMin=errorMin;
+		else
+			errorMin=errorMin/points.size();
 
 	}
 
@@ -318,7 +321,6 @@ public:
 			
 			cout << "Inicio Nuevo centroide" << endl;
 			Timer tss;
-			vector<double> VecCentro;
 			for(int i=0;i < Grupos.size();i++){
 				vector<double> VecCentro(17771,0);
 				//Timer ts;
@@ -363,7 +365,7 @@ public:
 
 					error+=Grupos[indice].getErrorPre();
 				}
-				return error;
+				return error/Grupos.size();
 			}
 			control=1;
 			iter++;
@@ -427,9 +429,6 @@ int LlenarDatos(vector<pair<double,double>>& valores,string linea){
     //}
 }
 
-
-
-
 int main(){
 	srand(time(NULL)); 
     string ipserver="localhost"; //Momentaneamente
@@ -440,7 +439,7 @@ int main(){
 
 	//Conexion Server
 
-	const string conexionserver = "tcp://"+ipserver+":4002";
+	const string conexionserver = "tcp://"+ipserver+":5001";
 
 
 	socket_out.connect(conexionserver);
@@ -457,32 +456,27 @@ int main(){
 	    string linea;
 	    vector<PointUser> points;
 	    while(getline(archivo_entrada, linea)){
-
-    	vector<pair<double,double>> valores;
-    	int usuario=LlenarDatos(valores,linea);
-
-    	PointUser p(usuario, valores);
-    	//cout<< p.getID() << endl;
-    	points.push_back(p);
-    }
+	    	vector<pair<double,double>> valores;
+	    	int usuario=LlenarDatos(valores,linea);
+	    	PointUser p(usuario, valores);
+	    	points.push_back(p);
+    	}
 
 		string recibido;
 		zmqpp::message msg;
 		cout<<"Recibiendo K"<<endl;
 		socket_out.receive(msg);
 		cout<<"K recibido"<<endl;
-
 		msg >> recibido;
-		cout<<"El k recibido es: "<<recibido<<endl;
-
+		cout<<"El k recibido es: ------------------>"<<recibido<<endl;
 		string result;
 
-		if(recibido != "Bye"){
+		if(recibido != "bye"){
 			KMeans kmeans(atoi(recibido.c_str()),4499,404546);
 			result=to_string(kmeans.run(points));
 		}
 		else
-			result=to_string(0);
+			break;
 		string resultado = result +"-"+ recibido.c_str()+" ";
 		zmqpp::message mensaje;
 		mensaje << resultado ;
