@@ -65,7 +65,7 @@ class Nodo():
 	def Finger(self):
 		for i in range(0,pot):
 			llave = self.GetId() + 2 ** i
-			self.finger_table[llave] = self.GetId()
+			self.finger_table[llave] = {"id" : self.GetId(), "ip": self.GetIp(), "puerto" : self.GetPuerto()}
 
 
 	#Pendiente de Modificiacion
@@ -118,7 +118,20 @@ def Server(canal_servidor, port, mi_nodo):
 					print(mi_nodo.GetX())
 					print(mi_nodo.GetY())
 					canal_servidor.send_json(data)
-
+			else:
+				table = mi_nodo.GetFinger()
+				minimo = 70
+				id_min = 0
+				ip_min = 0
+				puerto_min = 0
+				for llave in table:
+					if(table[llave][ide] - entrada_nodo_id < minimo):
+						id_min = table[llave][ide]
+						ip_min = table[llave][ip]
+						puerto_min = table[llave][puerto]
+						minimo = table[llave][ide] - entrada_nodo_id
+				data={"op" : "siguiente", "id" : id_min, "ip": ip_min, "puerto": puerto_min}
+				canal_servidor.send_json(data)
 
 
 
@@ -133,7 +146,7 @@ def main():
 		my_ip = sys.argv[1]
 		my_port = sys.argv[2]
 
-		ide = random.randrange(1,15)
+		ide = random.randrange(1,17)
 		print(ide)
 		print("\n")
 
@@ -191,6 +204,7 @@ def main():
 			conectado=True
 
 		if(respuesta["op"] == "siguiente"):
+			sgte_id =  respuesta["id"]
 			sgte_ip = respuesta["ip"]
 			sgte_op = respuesta["puerto"]			
 			socket_cliente.disconnect(address)
