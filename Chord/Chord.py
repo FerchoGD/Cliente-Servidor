@@ -103,7 +103,7 @@ def Server(canal_servidor, port, mi_nodo):
 			if(aqui_es):
 				if(mi_nodo.GetId() > entrada_nodo_id):
 
-					data={"op": "si", "x":mi_nodo.GetX() , "y":entrada_nodo_id}
+					data={"op": "si", "x":mi_nodo.GetX() , "y":entrada_nodo_id,"server_id": mi_nodo.GetId()}
 					mi_nodo.SetX(entrada_nodo_id+1)
 					mi_nodo.SetY(mi_nodo.GetId())
 					print(mi_nodo.GetX())
@@ -112,7 +112,7 @@ def Server(canal_servidor, port, mi_nodo):
 
 				else:
 
-					data={"op": "si", "x":mi_nodo.GetY()+1, "y": entrada_nodo_id}
+					data={"op": "si", "x":mi_nodo.GetY()+1, "y": entrada_nodo_id, "server_id": mi_nodo.GetId()}
 					mi_nodo.SetX(entrada_nodo_id+1)
 					mi_nodo.SetY(mi_nodo.GetId())
 					print(mi_nodo.GetX())
@@ -126,12 +126,17 @@ def Server(canal_servidor, port, mi_nodo):
 				puerto_min = 0
 				for llave in table:
 					if(table[llave][ide] - entrada_nodo_id < minimo):
-						id_min = table[llave][ide]
-						ip_min = table[llave][ip]
-						puerto_min = table[llave][puerto]
-						minimo = table[llave][ide] - entrada_nodo_id
+						id_min = table[llave]["id"]
+						ip_min = table[llave]["ip"]
+						puerto_min = table[llave]["puerto"]
+						minimo = table[llave]["id"] - entrada_nodo_id
 				data={"op" : "siguiente", "id" : id_min, "ip": ip_min, "puerto": puerto_min}
 				canal_servidor.send_json(data)
+		if(mensaje["op"] == "actualizando"):
+			llave_check = mensaje["llave"]
+			if(Verificar(llave, mi_nodo.GetX(), mi_nodo.GetY())):
+				
+
 
 
 
@@ -200,6 +205,16 @@ def main():
 			nuevo.SetY(respuesta["y"])
 			print(nuevo.GetX())
 			print(nuevo.GetY())
+
+			new_finger = {}
+
+			for i in range(0,pot):
+				llave = nuevo.GetId() + 2 ** i
+				socket_cliente.send_json({"op": "actualizando", "llave": llave})
+				mensaje = socket_cliente.recv_json()
+				new_finger[llave] = {"id" : , "ip": , "puerto" : }
+
+
 			print("Actualizado con exito")
 			conectado=True
 
