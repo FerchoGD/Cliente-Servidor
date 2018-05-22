@@ -125,7 +125,7 @@ def Server(canal_servidor, port, mi_nodo):
 				ip_min = 0
 				puerto_min = 0
 				for llave in table:
-					if(table[llave][ide] - entrada_nodo_id < minimo):
+					if(table[llave]["id"] - entrada_nodo_id < minimo):
 						id_min = table[llave]["id"]
 						ip_min = table[llave]["ip"]
 						puerto_min = table[llave]["puerto"]
@@ -135,13 +135,13 @@ def Server(canal_servidor, port, mi_nodo):
 		if(mensaje["op"] == "actualizando"):
 			llave_check = mensaje["llave"]
 			if(Verificar(llave_check, mi_nodo.GetX(), mi_nodo.GetY())):
-				msj = {"op": "es_llave", "id": mi_nodo.GetId(), "ip": mi_nodo.GetIp() , "port": mi_nodo.GetPuerto()}
+				msj = {"op": "es_llave", "id": mi_nodo.GetId(), "ip": mi_nodo.GetIp() , "puerto": mi_nodo.GetPuerto()}
 			else:
 				my_finger = mi_nodo.GetFinger()
 				minimo = 70
 				for key in  my_finger:
-					if( my_finger[key]["id"] - llave < minimo):
-						minimo = my_finger[key]["id"] - llave
+					if( my_finger[key]["id"] - llave_check < minimo):
+						minimo = my_finger[key]["id"] - llave_check
 						sgte_id = my_finger[key]["id"]
 						sgte_ip = my_finger[key]["ip"]
 						sgte_port = my_finger[key]["puerto"]
@@ -164,7 +164,7 @@ def main():
 		my_ip = sys.argv[1]
 		my_port = sys.argv[2]
 
-		ide = random.randrange(1,17)
+		ide = random.randrange(1,cant_nodos+1)
 		print(ide)
 		print("\n")
 
@@ -181,7 +181,7 @@ def main():
 	if(len(sys.argv) == 5):
 		my_ip = sys.argv[1]
 		my_port = sys.argv[2]
-		ide = random.randrange(15)
+		ide = random.randrange(1,cant_nodos+1)
 		print(ide)
 		print("\n")
 
