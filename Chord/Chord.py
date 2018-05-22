@@ -134,8 +134,23 @@ def Server(canal_servidor, port, mi_nodo):
 				canal_servidor.send_json(data)
 		if(mensaje["op"] == "actualizando"):
 			llave_check = mensaje["llave"]
-			if(Verificar(llave, mi_nodo.GetX(), mi_nodo.GetY())):
-				
+			if(Verificar(llave_check, mi_nodo.GetX(), mi_nodo.GetY())):
+				msj = {"op": "es_llave", "id": mi_nodo.GetId(), "ip": mi_nodo.GetIp() , "port": mi_nodo.GetPuerto()}
+			else:
+				my_finger = mi_nodo.GetFinger()
+				minimo = 70
+				for key in  my_finger:
+					if( my_finger[key]["id"] - llave < minimo):
+						minimo = my_finger[key]["id"] - llave
+						sgte_id = my_finger[key]["id"]
+						sgte_ip = my_finger[key]["ip"]
+						sgte_port = my_finger[key]["puerto"]
+				msj = {"op": "no_es_llave", "id": sgte_id, "ip": sgte_ip , "puerto": sgte_port}
+			canal_servidor.send_json(msj)
+
+
+
+
 
 
 
@@ -145,8 +160,6 @@ def Server(canal_servidor, port, mi_nodo):
 
 
 def main():
-
-
 	if(len(sys.argv) == 3):
 		my_ip = sys.argv[1]
 		my_port = sys.argv[2]
@@ -178,7 +191,7 @@ def main():
 		other_ip = sys.argv[3]
 		other_port = sys.argv[4]
 
-		address = "tcp://"+other_ip+":"+other_port		
+		address = "tcp://"+other_ip+":"+other_port
 		conectado = False
 
 
@@ -197,7 +210,7 @@ def main():
 		socket_cliente.send_json(data)
 		respuesta = socket_cliente.recv_json()
 
-		
+
 
 		if(respuesta["op"] == "si"):
 			print(respuesta["op"])
@@ -212,7 +225,18 @@ def main():
 				llave = nuevo.GetId() + 2 ** i
 				socket_cliente.send_json({"op": "actualizando", "llave": llave})
 				mensaje = socket_cliente.recv_json()
-				new_finger[llave] = {"id" : , "ip": , "puerto" : }
+				if (mensaje["op"] == "es_llave"):
+					new_finger[llave] = {"id" : mensaje["id"], "ip": mensaje["ip"] , "puerto" : mensaje["puerto"]}
+				elif (mensaje["op"] == "no_es_llave"):
+					sgte_ip = mensaje["ip"]
+					sgte_port = mensaje["puerto"]
+					socket_cliente.disconnect(address)
+					address = "tcp://"+sgte_ip+":"+sgte_port
+					socket_cliente.connect(address)
+
+
+
+
 
 
 			print("Actualizado con exito")
@@ -221,10 +245,10 @@ def main():
 		if(respuesta["op"] == "siguiente"):
 			sgte_id =  respuesta["id"]
 			sgte_ip = respuesta["ip"]
-			sgte_op = respuesta["puerto"]			
+			sgte_port = respuesta["puerto"]
 			socket_cliente.disconnect(address)
-			address = "tcp://"+sgte_ip+":"+sgte_op
-			
+			address = "tcp://"+sgte_ip+":"+sgte_port
+
 
 
 
