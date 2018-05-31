@@ -58,9 +58,7 @@ class Nodo():
 	#Recibiendo y actualizando con una nueva finger
 	def Actualizar_Finger(self,table):
 		for key in self.finger_table:
-			print("Llave: "+str(key))
-			print(self.finger_table[key])
-			print("!!!!!!!!!!!!!!!")
+			print("Llave: "+str(key)+" "+str(self.finger_table[key]))
 			print(table[key])
 			self.finger_table[key] = table[key]
 
@@ -69,10 +67,9 @@ class Nodo():
 
 	def Mostrar_Finger(self):
 		for key in self.finger_table:
-			print(key)
-			print(self.finger_table[key])
-			print("\n")
-
+			print(str(key) +" "+str(self.finger_table[key]))
+			#print(self.finger_table[key])
+			
 #Funcion para verificar si estoy en el rango del nodo
 def Verificar(id_entrada, mi_x, mi_y):
 	resultado = False
