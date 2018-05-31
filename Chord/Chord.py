@@ -58,8 +58,8 @@ class Nodo():
 	#Recibiendo y actualizando con una nueva finger
 	def Actualizar_Finger(self,table):
 		for key in self.finger_table:
-			print("Llave: "+str(key)+" "+str(self.finger_table[key]))
-			print(table[key])
+			#print("Llave: "+str(key)+" "+str(self.finger_table[key]))
+			#print(table[key])
 			self.finger_table[key] = table[key]
 
 
@@ -93,7 +93,8 @@ def Server(canal_servidor, port, mi_nodo,contexto):
 		mensaje = canal_servidor.recv_json()
 
 		if (mensaje["op"] == "conexion"):
-			print("Albert")
+			print("\n")
+			print("Se estan conectado a mi"+"\n")
 			entrada_nodo_id = mensaje["id"]
 
 			aqui_es = Verificar(entrada_nodo_id, mi_nodo.GetX(), mi_nodo.GetY())
@@ -104,8 +105,7 @@ def Server(canal_servidor, port, mi_nodo,contexto):
 					data={"op": "si", "x":mi_nodo.GetX() , "y":entrada_nodo_id}
 					mi_nodo.SetX(entrada_nodo_id+1)
 					mi_nodo.SetY(mi_nodo.GetId())
-					print(mi_nodo.GetX())
-					print(mi_nodo.GetY())
+					print("Rango: "+str(mi_nodo.GetX()) +" - "+ str(mi_nodo.GetY()))
 					
 
 				else:
@@ -113,8 +113,7 @@ def Server(canal_servidor, port, mi_nodo,contexto):
 					data={"op": "si", "x":mi_nodo.GetY()+1, "y": entrada_nodo_id}
 					mi_nodo.SetX(entrada_nodo_id+1)
 					mi_nodo.SetY(mi_nodo.GetId())
-					print(mi_nodo.GetX())
-					print(mi_nodo.GetY())
+					print("Rango: "+str(mi_nodo.GetX()) +" - "+ str(mi_nodo.GetY())+"\n")
 			else:
 				table = mi_nodo.GetFinger()
 				Stop = True
@@ -131,12 +130,12 @@ def Server(canal_servidor, port, mi_nodo,contexto):
 			canal_servidor.send_json(data)	
 
 		elif(mensaje["op"] == "actualizando"):
-			mi_nodo.Mostrar_Finger()
+			print("Actualizando Inicio  --- Actualizando finger del nuevo")
+			#mi_nodo.Mostrar_Finger()
 			llave_check = mensaje["llave"]
 
 			print(llave_check)
 			if(Verificar(llave_check, mi_nodo.GetX(), mi_nodo.GetY())):
-				print("gholalalal")
 				msj = {"op": "es_llave", "id": mi_nodo.GetId(), "ip": mi_nodo.GetIp() , "puerto": mi_nodo.GetPuerto()}
 			else:
 				my_finger = mi_nodo.GetFinger()
@@ -151,6 +150,8 @@ def Server(canal_servidor, port, mi_nodo,contexto):
 
 				msj = {"op": "no_es_llave", "id": sgte_id, "ip": sgte_ip , "puerto": sgte_port}
 			canal_servidor.send_json(msj)
+			print("Actualizando Fin")
+
 
 		elif(mensaje["op"] == "rueda_la_bola"):
 			
@@ -239,16 +240,15 @@ def main():
 		respuesta = socket_cliente.recv_json()
 
 		if(respuesta["op"] == "si"):
-			print("Dubel")
 			print(respuesta["op"])
 			nuevo.SetX(respuesta["x"])
 			nuevo.SetY(respuesta["y"])
-			print(nuevo.GetX())
-			print(nuevo.GetY())
+			print("Rango: "+str(nuevo.GetX()) +" - "+ str(nuevo.GetY())+"\n"+"\n")
+
+			
 
 			#Actualizando Finger
 			new_finger = {}
-			print("Puto")
 			for i in range(0,pot):
 				encontrado = False
 				llave = (nuevo.GetId() + 2 ** i) % cant_nodos
@@ -256,7 +256,7 @@ def main():
 				
 				if(Verificar(llave,nuevo.GetX(),nuevo.GetY())):
 					new_finger[llave] = {"id" : nuevo.GetId(), "ip": nuevo.GetIp() , "puerto" : nuevo.GetPuerto()}
-					print("hola")
+					print("Me pertenece esta llave")
 				else:
 					while not encontrado:
 						socket_cliente.send_json({"op": "actualizando", "llave": llave})
@@ -273,8 +273,8 @@ def main():
 							address = "tcp://"+sgte_ip+":"+sgte_port
 							socket_cliente.connect(address)
 			nuevo.Actualizar_Finger(new_finger)
-			
-			print("Actualizado con exito")
+			print("\n")
+			print("He Actualizado mi finger con exito"+"\n")
 			nuevo.Mostrar_Finger()
 			conectado=True
 
