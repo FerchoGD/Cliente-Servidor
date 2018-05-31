@@ -147,6 +147,13 @@ def Server(canal_servidor, port, mi_nodo,contexto):
 							sgte_ip = my_finger[key]["ip"]
 							sgte_port = my_finger[key]["puerto"]
 							Stop=False
+					banderaKeyFinal=key
+				if(Stop):
+					sgte_id = my_finger[banderaKeyFinal]["id"]
+					sgte_ip = my_finger[banderaKeyFinal]["ip"]
+					sgte_port = my_finger[banderaKeyFinal]["puerto"]
+
+
 
 				msj = {"op": "no_es_llave", "id": sgte_id, "ip": sgte_ip , "puerto": sgte_port}
 			canal_servidor.send_json(msj)
