@@ -9,7 +9,7 @@ from time import sleep
 
 
 
-cant_nodos = 256
+cant_nodos = 16
 
 pot = int(math.log2(cant_nodos)) 
 
@@ -24,12 +24,6 @@ class Nodo():
 		self.range_x = 0
 		self.range_y = 0
 
-	def GetSucesor(self):
-		return self.sucesor
-
-	def GetPredecesor(self):
-		return self.predecesor
-
 	def GetIp(self):
 		return self.ip
 
@@ -39,12 +33,6 @@ class Nodo():
 	def GetPuerto(self):
 		return self.puerto
 
-
-	def SetSucesor(new_sucesor):
-		self.sucesor = new_sucesor
-
-	def SetPredecesor(new_predecesor):
-		self.predecesor = new_predecesor
 
 	def SetX(self,num_x):
 		self.range_x = num_x
@@ -63,13 +51,17 @@ class Nodo():
 
 	def Finger(self):
 		for i in range(0,pot):
-			llave = self.GetId() + 2 ** i
-			self.finger_table[llave] = {"id" : self.GetId(), "ip": self.GetIp(), "puerto" : self.GetPuerto()}
+			llave = (self.id + 2 ** i) % cant_nodos
+			self.finger_table[llave] = {"id" : self.id, "ip": self.ip, "puerto" : self.puerto}
 
 
-	#Pendiente de Modificiacion
+	#Recibiendo y actualizando con una nueva finger
 	def Actualizar_Finger(self,table):
 		for key in self.finger_table:
+			print("Llave: "+str(key))
+			print(self.finger_table[key])
+			print("!!!!!!!!!!!!!!!")
+			print(table[key])
 			self.finger_table[key] = table[key]
 
 
@@ -179,9 +171,9 @@ def Server(canal_servidor, port, mi_nodo,contexto):
 			mi_nodo.Actualizar_Finger(finger)
 			mi_nodo.Mostrar_Finger()			
 
-			if(mensaje["start"] != finger[mi_nodo.GetId() + 2 ** 0]["id"]):
+			if(mensaje["start"] != finger[(mi_nodo.GetId() + 2 ** 0) % cant_nodos]["id"]):
 				socket_sucesor = contexto.socket(zmq.REQ)
-				key_sucesor = mi_nodo.GetId() + 2**0 % cant_nodos
+				key_sucesor = (mi_nodo.GetId() + 2**0) % cant_nodos
 				ip_sucesor = finger[key_sucesor]["ip"]
 				puerto_sucesor = finger[key_sucesor]["puerto"]
 				dir_sucesor = "tcp://"+ip_sucesor+":"+puerto_sucesor
@@ -260,7 +252,7 @@ def main():
 			#Actualizando Finger
 			new_finger = {}
 			print("Puto")
-			for i in range(0,pot-1):
+			for i in range(0,pot):
 				encontrado = False
 				llave = (nuevo.GetId() + 2 ** i) % cant_nodos
 				print(llave)
@@ -301,7 +293,7 @@ def main():
 
 		if(conectado):
 			sucesor_finger = nuevo.GetFinger()
-			key_sucesor = nuevo.GetId() + 2 ** 0
+			key_sucesor = (nuevo.GetId() + 2 ** 0) % cant_nodos
 			sucesor={"id": sucesor_finger[key_sucesor]["id"], "ip": sucesor_finger[key_sucesor]["ip"], "puerto": sucesor_finger[key_sucesor]["puerto"]}
 			solicitud = {"op": "rueda_la_bola" , "id": nuevo.GetId(), "x": nuevo.GetX(), "y": nuevo.GetY(), "ip": nuevo.GetIp(), "puerto": nuevo.GetPuerto(), "start": nuevo.GetId()}
 
