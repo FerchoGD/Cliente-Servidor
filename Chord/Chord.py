@@ -141,7 +141,7 @@ def Server(canal_servidor, port, mi_nodo,contexto):
 				my_finger = mi_nodo.GetFinger()
 				Stop = True
 				for key in  my_finger:
-					if( my_finger[key]["id"] > llave_check):
+					if( my_finger[key]["id"] >= llave_check):
 						if(Stop):
 							sgte_id = my_finger[key]["id"]
 							sgte_ip = my_finger[key]["ip"]
@@ -149,9 +149,11 @@ def Server(canal_servidor, port, mi_nodo,contexto):
 							Stop=False
 					banderaKeyFinal=key
 				if(Stop):
+					print("No estoy ")
 					sgte_id = my_finger[banderaKeyFinal]["id"]
 					sgte_ip = my_finger[banderaKeyFinal]["ip"]
 					sgte_port = my_finger[banderaKeyFinal]["puerto"]
+					print(str(sgte_id)+"  "+str(sgte_ip)+" "+str(sgte_port))
 
 
 
