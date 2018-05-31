@@ -164,7 +164,7 @@ def Server(canal_servidor, port, mi_nodo,contexto):
 					finger[key]["ip"] = mensaje["ip"]
 					finger[key]["puerto"] = mensaje["puerto"]
 			canal_servidor.send_string("Listo")
-
+			print("RODANDO LA BOLA")
 			mi_nodo.Actualizar_Finger(finger)
 			mi_nodo.Mostrar_Finger()			
 
@@ -174,7 +174,7 @@ def Server(canal_servidor, port, mi_nodo,contexto):
 				ip_sucesor = finger[key_sucesor]["ip"]
 				puerto_sucesor = finger[key_sucesor]["puerto"]
 				dir_sucesor = "tcp://"+ip_sucesor+":"+puerto_sucesor
-				solicitud = {"op": "rueda_la_bola" , "id": mi_nodo.GetId(), "x": mi_nodo.GetX(), "y": mi_nodo.GetY(), "ip": mi_nodo.GetIp(), "puerto": mi_nodo.GetPuerto(), "start": mensaje["start"]}
+				solicitud = {"op": "rueda_la_bola" , "id": mensaje["id"], "x": mensaje["x"], "y": mensaje["y"], "ip": mensaje["ip"], "puerto": mensaje["puerto"], "start": mensaje["start"]}
 				socket_sucesor.connect(dir_sucesor)
 				socket_sucesor.send_json(solicitud)
 				socket_sucesor.disconnect(dir_sucesor)
