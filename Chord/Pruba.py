@@ -83,6 +83,38 @@ def Verificar(id_entrada, mi_x, mi_y):
 
 	return resultado
 
+	
+def encontrar(table,entrada_nodo_id):
+	banderaKeyFinal= -1
+	
+	for llave in table:
+		print(llave)
+		
+		if(banderaKeyFinal > table[llave]["id"]):
+			sgte_id = table[llave]["id"]
+			sgte_ip = table[llave]["ip"]
+			sgte_port = table[llave]["puerto"]
+			data={"op" : "siguiente", "id" : sgte_id, "ip": sgte_ip, "puerto": sgte_port}
+			return data
+			
+		if(table[llave]["id"] > entrada_nodo_id):
+			print("Noooo")
+			sgte_id = table[llave]["id"]
+			sgte_ip = table[llave]["ip"]
+			sgte_port = table[llave]["puerto"]
+			data={"op" : "siguiente", "id" : sgte_id, "ip": sgte_ip, "puerto": sgte_port}
+			return data
+					
+		banderaKeyFinal=table[llave]["id"]
+		KeyFinal=llave
+
+	print("No estoy ")
+	sgte_id = table[KeyFinal]["id"]
+	sgte_ip = table[KeyFinal]["ip"]
+	sgte_port = table[KeyFinal]["puerto"]
+	print(str(sgte_id)+"  "+str(sgte_ip)+" "+str(sgte_port))
+	data={"op" : "siguiente", "id" : sgte_id, "ip": sgte_ip, "puerto": sgte_port}
+	return data
 
 
 
@@ -109,41 +141,7 @@ def Server(canal_servidor, port, mi_nodo,contexto):
 					
 			else:
 				table = mi_nodo.GetFinger()
-				Stop1 = True
-				Stop2 = True
-
-				banderaKeyFinal= -1
-				
-				for llave in table:
-					print(llave)
-					if(Stop2):
-						if(banderaKeyFinal > table[llave]["id"]):
-							sgte_id = table[llave]["id"]
-							sgte_ip = table[llave]["ip"]
-							sgte_port = table[llave]["puerto"]
-							Stop1=False
-							Stop2=False
-							print("holaaaaaaa")
-					if(Stop2):
-						if(table[llave]["id"] > entrada_nodo_id):
-							if(Stop1):
-								print("Noooo")
-								sgte_id = table[llave]["id"]
-								sgte_ip = table[llave]["ip"]
-								sgte_port = table[llave]["puerto"]
-								Stop1=False
-								Stop2=False
-					banderaKeyFinal=table[llave]["id"]
-					KeyFinal=llave
-				if(Stop1):
-					print("No estoy ")
-					sgte_id = table[KeyFinal]["id"]
-					sgte_ip = table[KeyFinal]["ip"]
-					sgte_port = table[KeyFinal]["puerto"]
-					print(str(sgte_id)+"  "+str(sgte_ip)+" "+str(sgte_port))
-
-
-				data={"op" : "siguiente", "id" : sgte_id, "ip": sgte_ip, "puerto": sgte_port}
+				data=encontrar(table,entrada_nodo_id)
 			canal_servidor.send_json(data)	
 
 		elif(mensaje["op"] == "actualizando"):
