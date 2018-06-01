@@ -119,14 +119,22 @@ def Server(canal_servidor, port, mi_nodo,contexto):
 				Stop = True
 				
 				for llave in table:
-					if(table[llave]["id"] > entrada_nodo_id):
+					if(table[llave]["id"] >= entrada_nodo_id):
 						if(Stop):
 							id_Sig = table[llave]["id"]
 							ip_Sig = table[llave]["ip"]
 							puerto_Sig = table[llave]["puerto"]
 							Stop=False
+					banderaKeyFinal=llave
+				if(Stop):
+					print("No estoy ")
+					sgte_id = table[banderaKeyFinal]["id"]
+					sgte_ip = table[banderaKeyFinal]["ip"]
+					sgte_port = table[banderaKeyFinal]["puerto"]
+					print(str(sgte_id)+"  "+str(sgte_ip)+" "+str(sgte_port))
 
-				data={"op" : "siguiente", "id" : id_Sig, "ip": ip_Sig, "puerto": puerto_Sig}
+
+				data={"op" : "siguiente", "id" : sgte_id, "ip": sgte_ip, "puerto": sgte_port}
 			canal_servidor.send_json(data)	
 
 		elif(mensaje["op"] == "actualizando"):
