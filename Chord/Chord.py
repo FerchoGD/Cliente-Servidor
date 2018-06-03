@@ -7,7 +7,7 @@ import os
 import math
 from time import sleep
 
-cant_nodos = 64
+cant_nodos = 16
 pot = int(math.log2(cant_nodos)) 
 class Nodo():
 
@@ -18,37 +18,26 @@ class Nodo():
 		self.puerto = puerto
 		self.range_x = 0
 		self.range_y = 0
-
 	def GetIp(self):
 		return self.ip
-
 	def GetId(self):
 		return self.id
-
 	def GetPuerto(self):
 		return self.puerto
-
-
 	def SetX(self,num_x):
 		self.range_x = num_x
-
 	def SetY(self,num_y):
 		self.range_y = num_y
-
 	def GetX(self):
 		return self.range_x
-
 	def GetY(self):
 		return self.range_y
-
 	def GetFinger(self):
 		return self.finger_table
-
 	def Finger(self):
 		for i in range(0,pot):
 			llave = (self.id + 2 ** i) % cant_nodos
 			self.finger_table[llave] = {"id" : self.id, "ip": self.ip, "puerto" : self.puerto, "rangollave" : {"x" :self.range_x, "y" : self.range_y}}
-
 
 	#Recibiendo y actualizando con una nueva finger
 	def Actualizar_Finger(self,table):
@@ -56,7 +45,6 @@ class Nodo():
 			#print("Llave: "+str(key)+" "+str(self.finger_table[key]))
 			#print(table[key])
 			self.finger_table[key] = table[key]
-
 
 	#Imprimir finger Table
 	def Mostrar_Finger(self):
@@ -171,6 +159,43 @@ def Server(canal_servidor, port, mi_nodo,contexto):
 				socket_sucesor.connect(dir_sucesor)
 				socket_sucesor.send_json(solicitud)
 				socket_sucesor.disconnect(dir_sucesor)
+
+		elif(mensaje["op"] == "Eliminar_nodo"):
+			if(mensaje["stop"]):
+				mi_nodo.SetX(mensaje["rxi"])
+			print("Rango: "+str(mi_nodo.GetX()) +" - "+ str(mi_nodo.GetY()))
+			finger = mi_nodo.GetFinger()
+			for key in finger:
+				if(Verificar(key, mensaje["rxi"], mensaje["ryi"])):
+					finger[key]["id"] = mensaje["id"]
+					finger[key]["ip"] = mensaje["ip"]
+					finger[key]["puerto"] = mensaje["puerto"]
+					finger[key]["rangollave"]={"x": mensaje["rxi"],"y":mensaje["ryi"]}
+
+				if(Verificar(key, mensaje["rxi"], mensaje["ryi"])):
+					finger[key]["rangollave"]={"x": mensaje["rxi"],"y":mensaje["ryi"]}
+
+			canal_servidor.send_string("Listo")
+			print("Eliminar_nodo")
+			mi_nodo.Actualizar_Finger(finger)
+			mi_nodo.Mostrar_Finger()	
+			socket_sucesor = contexto.socket(zmq.REQ)
+			key_sucesor = (mi_nodo.GetId() + 2**0) % cant_nodos
+			id_sucesor = finger[key_sucesor]["id"]
+			ip_sucesor = finger[key_sucesor]["ip"]
+			puerto_sucesor = finger[key_sucesor]["puerto"]		
+			print(key_sucesor)
+			print(mensaje["start"])
+			if(key_sucesor != mensaje["start"]):
+				print("holaaa")
+				dir_sucesor = "tcp://"+ip_sucesor+":"+puerto_sucesor				
+				solicitud = {"op": "Eliminar_nodo" , "id": mensaje["id"], "rxi": mensaje["rxi"], "ryi": mensaje["ryi"],"ip": mensaje["ip"], "puerto": mensaje["puerto"], "start": mensaje["start"],"stop":False}
+				socket_sucesor.connect(dir_sucesor)
+				socket_sucesor.send_json(solicitud)
+				socket_sucesor.disconnect(dir_sucesor)
+
+
+
 			
 def main():
 	#Solo para el ingreso del primer nodo del chord.
@@ -282,6 +307,29 @@ def main():
 			socket_cliente.connect(address)
 			socket_cliente.send_json(solicitud)
 			socket_cliente.recv_string()
+
+	while conectado:
+		print("Escoger la opcion:")
+		print("1..Eliminar nodo")
+		print("2..Subir Cancion")
+		print("3..Bajar cancion")
+		print("\n")
+		
+		op=int(input("Escoger la opcion:"))
+		if(op==1):
+			sucesor_finger = nuevo.GetFinger()
+			key_sucesor = (nuevo.GetId() + 2 ** 0) % cant_nodos
+			xsucesor=sucesor_finger[key_sucesor]["rangollave"]["x"]
+			ysucesor=sucesor_finger[key_sucesor]["rangollave"]["y"]
+			sucesor={"id": sucesor_finger[key_sucesor]["id"], "ip": sucesor_finger[key_sucesor]["ip"], "puerto": sucesor_finger[key_sucesor]["puerto"]}
+			solicitud = {"op": "Eliminar_nodo" , "id": sucesor_finger[key_sucesor]["id"],"rxi":nuevo.GetX(), "ryi": ysucesor, "ip": sucesor_finger[key_sucesor]["ip"], "puerto":sucesor_finger[key_sucesor]["puerto"],"start":nuevo.GetX(),"stop":True}
+			address = "tcp://"+sucesor["ip"]+":"+sucesor["puerto"]
+			socket_cliente.connect(address)
+			socket_cliente.send_json(solicitud)
+			socket_cliente.recv_string()
+			socket_cliente.disconnect(address)
+			print("Termine")
+			conectado=False
 
 
 main()
