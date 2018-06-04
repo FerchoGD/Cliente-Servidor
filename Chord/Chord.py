@@ -226,6 +226,21 @@ def Server(canal_servidor, port, mi_nodo,contexto):
 				output.write(info_parte)
 			mi_nodo.SetArchivos(mis_archivos)
 			mi_nodo.Mostrar_Archivos()
+
+		elif(mensaje["op"] == "solicito_parte"):
+			if(Verificar(int(mensaje["llave"]), mi_nodo.GetX(), mi_nodo.GetY())):
+				data_parte = open(mensaje["parte"],"rb")
+				info_parte = data_parte.read()
+				mensaje = {"op":"recibela"}
+				canal_servidor.send_json(mensaje)
+				canal_servidor.recv_string()
+				canal_servidor.send(info_parte)
+
+			else:
+				table = mi_nodo.GetFinger()
+				data=encontrarNodo(table,entrada_nodo_id,1)
+				canal_servidor.send_json(data)
+
 				
 		
 
@@ -366,6 +381,7 @@ def main():
 			socket_cliente.disconnect(address)
 			print("Termine")
 			conectado=False
+			sys.exit()
 
 		if(op==2):
 			filename = input("Digite el nombre del archivo: ")
@@ -385,7 +401,7 @@ def main():
 				while i<=lim:
 					enviado = False
 					key = random.randrange(0,cant_nodos-1)
-					to_write = str(key)+" - "+filename+str(i+1)+extension+"\n"
+					to_write = str(key)+"-"+filename+str(i+1)+extension+"\n"
 					resultados.write(to_write.encode('utf-8'))
 					print("Parte en el ID: "+str(key))
 					if(Verificar(key,nuevo.GetX(),nuevo.GetY())):
@@ -421,7 +437,48 @@ def main():
 
 					print("Enviada")
 					i+=1
-	sys.exit()
+
+
+		if(op==3):
+			filename = input("Digite el nombre del archivo: ")
+			extension =  input("Digite la extension del archivo: ")
+
+			resultado = open(filename+extension,"ab+")
+			archivo = open(filename+".txt")
+			lineas = archivo.readlines()
+			for linea in lineas:
+				datos = linea.split("-")
+				llave = datos[0]
+				otros = datos[1].split("\n")
+				parte = otros[0]
+
+				if(Verificar(int(llave),nuevo.GetX(),nuevo.GetY())):
+					data_parte = open(parte,"rb")
+					info_parte = data_parte.read()
+					resultado.write(info_parte)
+
+				else:
+					data={"op": "solicito_parte", "llave": llave, "parte": parte}
+					recibido = False
+
+					while not recibido:				
+						
+						socket_cliente.send_json(data) 
+						msj=socket_cliente.recv_json()
+						if(msj["op"] == "recibela"):
+							socket_cliente.send_string("Damela")
+							info_parte = socket_cliente.recv()
+							resultado.write(info_parte)
+							recibido = True
+							print("Recibido con exito")
+
+						elif(msj["op"] == "siguiente"):
+							sgte_id =  msj["id"]
+							sgte_ip = msj["ip"]
+							sgte_port = msj["puerto"]
+							socket_cliente.disconnect(address)
+							address = "tcp://"+sgte_ip+":"+sgte_port
+							socket_cliente.connect(address)	
 
 
 main()
