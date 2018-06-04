@@ -7,13 +7,14 @@ import os
 import math
 from time import sleep
 
-cant_nodos = 16
+cant_nodos = 64
 pot = int(math.log2(cant_nodos)) 
 class Nodo():
 
 	def __init__(self,ip,puerto,ide):
 		self.id=ide
 		self.finger_table = {}
+		self.archivos = {}
 		self.ip = ip
 		self.puerto = puerto
 		self.range_x = 0
@@ -34,6 +35,11 @@ class Nodo():
 		return self.range_y
 	def GetFinger(self):
 		return self.finger_table
+	def GetArchivos(self):
+		return self.archivos
+	def SetArchivos(self,nuevos):
+		self.archivos = nuevos
+
 	def Finger(self):
 		for i in range(0,pot):
 			llave = (self.id + 2 ** i) % cant_nodos
@@ -50,6 +56,11 @@ class Nodo():
 	def Mostrar_Finger(self):
 		for key in self.finger_table:
 			print(str(key) +" "+str(self.finger_table[key]))
+			#print(self.finger_table[key])
+
+	def Mostrar_Archivos(self):
+		for key in self.archivos:
+			print(str(key) +" "+str(self.archivos[key]))
 			#print(self.finger_table[key])
 			
 #Funcion para verificar si estoy en el rango del nodo
@@ -141,9 +152,6 @@ def Server(canal_servidor, port, mi_nodo,contexto):
 					finger[key]["puerto"] = mensaje["puerto"]
 					finger[key]["rangollave"]={"x": mensaje["rx"],"y":mensaje["ry"]}
 
-				if(Verificar(key, mensaje["rxi"], mensaje["ryi"])):
-					finger[key]["rangollave"]={"x": mensaje["rxi"],"y":mensaje["ryi"]}
-
 			canal_servidor.send_string("Listo")
 			print("RODANDO LA BOLA")
 			mi_nodo.Actualizar_Finger(finger)
@@ -193,6 +201,33 @@ def Server(canal_servidor, port, mi_nodo,contexto):
 				socket_sucesor.connect(dir_sucesor)
 				socket_sucesor.send_json(solicitud)
 				socket_sucesor.disconnect(dir_sucesor)
+
+		elif(mensaje["op"]=="cargar_parte"):
+			if(Verificar(mensaje["llave"], mi_nodo.GetX(), mi_nodo.GetY())):
+				mensaje = {"op":"enviela"}
+				canal_servidor.send_json(mensaje)
+
+			else:
+				table = mi_nodo.GetFinger()
+				data=encontrarNodo(table,entrada_nodo_id,1)
+				canal_servidor.send_json(data)
+
+		elif(mensaje["op"] == "enviando_parte"):
+
+			key = mensaje["llave"]
+			archivo = mensaje["nombre_archivo"]
+			parte = mensaje["parte"]
+			canal_servidor.send_string("Listo")
+			info_parte = canal_servidor.recv()
+			canal_servidor.send_string("fin")
+			mis_archivos = mi_nodo.GetArchivos()
+			mis_archivos[key] = archivo+parte
+			with open(archivo+parte,"ab+") as output:
+				output.write(info_parte)
+			mi_nodo.SetArchivos(mis_archivos)
+			mi_nodo.Mostrar_Archivos()
+				
+		
 
 
 
@@ -311,11 +346,12 @@ def main():
 	while conectado:
 		print("Escoger la opcion:")
 		print("1..Eliminar nodo")
-		print("2..Subir Cancion")
-		print("3..Bajar cancion")
+		print("2..Subir archivo")
+		print("3..Bajar archivo")
 		print("\n")
 		
 		op=int(input("Escoger la opcion:"))
+
 		if(op==1):
 			sucesor_finger = nuevo.GetFinger()
 			key_sucesor = (nuevo.GetId() + 2 ** 0) % cant_nodos
@@ -330,6 +366,62 @@ def main():
 			socket_cliente.disconnect(address)
 			print("Termine")
 			conectado=False
+
+		if(op==2):
+			filename = input("Digite el nombre del archivo: ")
+			extension =  input("Digite la extension del archivo: ")
+
+			resultados = open(filename+".txt","ab+")
+
+			with open(filename+extension, "rb") as entrada:
+				data = entrada.read()
+				tam = entrada.tell()
+				lim=tam/(1024*1024)
+				print("Tamaño: "+ str(tam))
+				parts=int(lim+1)
+				i=0
+				print ("Partes: "+ str(parts))
+				entrada.seek(0)
+				while i<=lim:
+					enviado = False
+					key = random.randrange(0,cant_nodos-1)
+					to_write = str(key)+" - "+filename+str(i+1)+extension+"\n"
+					resultados.write(to_write.encode('utf-8'))
+					print("Parte en el ID: "+str(key))
+					if(Verificar(key,nuevo.GetX(),nuevo.GetY())):
+						data_part=entrada.read(1024*1024)
+						with open(filename+str(i+1)+extension,"ab+") as output:
+							output.write(data_part)
+					else:
+						data={"op": "cargar_parte", "llave": key}
+
+						while not enviado:				
+							
+							socket_cliente.send_json(data) 
+							msj=socket_cliente.recv_json()
+							if(msj["op"] == "enviela"):
+								data_part=entrada.read(1024*1024)
+								msj={"op" : "enviando_parte", "nombre_archivo":filename,"parte":str(i+1)+str(extension),"llave":key}
+								socket_cliente.send_json(msj)
+
+								socket_cliente.recv_string()
+								socket_cliente.send(data_part)
+								socket_cliente.recv_string()
+								enviado = True
+								print("Enviado con exito")
+
+							elif(msj["op"] == "siguiente"):
+								sgte_id =  msj["id"]
+								sgte_ip = msj["ip"]
+								sgte_port = msj["puerto"]
+								socket_cliente.disconnect(address)
+								address = "tcp://"+sgte_ip+":"+sgte_port
+								socket_cliente.connect(address)
+
+
+					print("Enviada")
+					i+=1
+	sys.exit()
 
 
 main()
