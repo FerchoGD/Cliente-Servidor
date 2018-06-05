@@ -117,12 +117,16 @@ def Server(canal_servidor, port, mi_nodo,contexto):
 			else:
 				for llave in archivos:
 					if(Verificar(llave,mensaje["mi_x"], mi_nodo.GetX()-1)):
+						print("Llave a rotar: "+str(llave))
 						archivos_to_send[llave] = archivos[llave]
 				canal_servidor.send_json({"op" : "rotando_partes", "lista_partes": archivos_to_send})
 				canal_servidor.recv_string()
+				print("Archivos a enviar: ")
+				print(archivos_to_send)
 
 				for llavesita in archivos_to_send:
 					with open(archivos_to_send[llavesita], "rb") as entrada:
+						print(llavesita)
 						info = entrada.read()
 						canal_servidor.send(info)
 						os.remove(archivos_to_send[llavesita])
@@ -377,17 +381,21 @@ def main():
 			socket_cliente.recv_string()
 
 			#Recibiendo los archivos que me corresponden
+			print("Empezando a rotar archivos...")
 
 			solicitud_partes = {"op": "roteme_partes","mi_x":nuevo.GetX()}
 			socket_cliente.send_json(solicitud_partes)
 			responde = socket_cliente.recv_json()
 
-			if(responde == "rotando_partes"):
+			if(responde["op"] == "rotando_partes"):
 				partes = responde["lista_partes"]
 				socket_cliente.send_string("Mandelas")
+				print("Partes Recibidas son: ")
+				print(partes)
 				for llave in partes:
 					with open(partes[llave], "ab+") as entrada:
-						info = canal_servidor.recv()
+						print("Recibiendo info parte..."+llave)
+						info = socket_cliente.recv()
 						entrada.write(info)
 					entrada.close()
 
@@ -433,14 +441,13 @@ def main():
 				i=0
 				print ("Partes: "+ str(parts))
 				entrada.seek(0)
+				archivos_nuevos = nuevo.GetArchivos()
 				while i<=lim:
 					enviado = False
 					key = random.randrange(0,cant_nodos-1)
 					to_write = str(key)+"-"+filename+str(i+1)+extension+"\n"
 					resultados.write(to_write.encode('utf-8'))
-					print("Parte en el ID: "+str(key))
-
-					archivos_nuevos = nuevo.GetArchivos()
+					print("Parte en el ID: "+str(key))					
 
 					if(Verificar(key,nuevo.GetX(),nuevo.GetY())):
 						archivos_nuevos[key] = filename+str(i+1)+extension
@@ -474,9 +481,11 @@ def main():
 								socket_cliente.connect(address)
 
 
-					nuevo.SetArchivos(archivos_nuevos)
+					
 					print("Enviada")
 					i+=1
+				nuevo.SetArchivos(archivos_nuevos)
+			nuevo.Mostrar_Archivos()
 			resultados.close()
 			print("Partes enviadas")
 
