@@ -108,12 +108,13 @@ def Server(canal_servidor, port, mi_nodo,contexto):
 
 	while True:
 		mensaje = canal_servidor.recv_json()
-		#condicional por medio del cual el nodo entrante busca su puesto en el chord
+		#Pasando los archivos al nuevo nodo que se conecta
 		if (mensaje["op"] == "roteme_partes"):
 			archivos = mi_nodo.GetArchivos()
 			archivos_to_send ={}
 			if not archivos:
 				print("Diccionario de archivos vacios, nada para enviar")
+				canal_servidor.send_json({"op": "nada_para_enviar"})
 			else:
 				for llave in archivos:
 					if(Verificar(llave,mensaje["mi_x"], mi_nodo.GetX()-1)):
@@ -129,9 +130,12 @@ def Server(canal_servidor, port, mi_nodo,contexto):
 						print(llavesita)
 						info = entrada.read()
 						canal_servidor.send(info)
+						canal_servidor.recv_string()
 						os.remove(archivos_to_send[llavesita])
 						del archivos[llavesita]
+				canal_servidor.send_string("Terminamos")
 
+		#condicional por medio del cual el nodo entrante busca su puesto en el chord
 		elif (mensaje["op"] == "conexion"):
 			print("\n")
 			print("Se esta conectado a mi el nodo "+str(mensaje["id"]))
@@ -396,8 +400,12 @@ def main():
 					with open(partes[llave], "ab+") as entrada:
 						print("Recibiendo info parte..."+llave)
 						info = socket_cliente.recv()
+						socket_cliente.send_string("Siga")
 						entrada.write(info)
-					entrada.close()
+						entrada.close()
+				socket_cliente.recv_string()
+			elif(responde["op"] ==  "nada_para_enviar"):
+				print("No hay archivos para recibir")
 
 
 
