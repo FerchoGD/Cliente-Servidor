@@ -135,6 +135,25 @@ def Server(canal_servidor, port, mi_nodo,contexto):
 						del archivos[llavesita]
 				canal_servidor.send_string("Terminamos")
 
+		elif(mensaje["op"] == "pasandote_partes"):
+			mis_archivos = mi_nodo.GetArchivos()
+			archivos_to_recv = mensaje["partes"]
+			canal_servidor.send_string("mandame_partes")
+			if not archivos_to_recv:
+				print("Ningun archivo para recibir")
+			else:
+				for key in archivos_to_recv:
+					mis_archivos[key] = archivos_to_recv[key]
+					with open(archivos_to_recv[key], "ab+") as entrada:
+						print(key)
+						info = canal_servidor.recv() 
+						entrada.write(info)
+						entrada.close()
+						canal_servidor.send("siga")
+
+
+
+
 		#condicional por medio del cual el nodo entrante busca su puesto en el chord
 		elif (mensaje["op"] == "conexion"):
 			print("\n")
@@ -205,9 +224,6 @@ def Server(canal_servidor, port, mi_nodo,contexto):
 					finger[key]["id"] = mensaje["id"]
 					finger[key]["ip"] = mensaje["ip"]
 					finger[key]["puerto"] = mensaje["puerto"]
-					finger[key]["rangollave"]={"x": mensaje["rxi"],"y":mensaje["ryi"]}
-
-				if(Verificar(key, mensaje["rxi"], mensaje["ryi"])):
 					finger[key]["rangollave"]={"x": mensaje["rxi"],"y":mensaje["ryi"]}
 
 			canal_servidor.send_string("Listo")
@@ -429,9 +445,34 @@ def main():
 			socket_cliente.connect(address)
 			socket_cliente.send_json(solicitud)
 			socket_cliente.recv_string()
+			
+
+			print("Pasando los archivos...")
+
+
+			archivos = nuevo.GetArchivos()
+
+			solicitud_partes = {"op": "pasandote_partes","partes":archivos}
+			socket_cliente.send_json(solicitud_partes)
+			responde = socket_cliente.recv_string()
+
+			if(responde == "mandame_partes"):
+				socket_cliente.send_string("Tomalas")
+				print("Partes a enviar son: ")
+				print(archivos)
+				for llave in partes:
+					with open(partes[llave], "ab+") as entrada:
+						print("Recibiendo info parte..."+llave)
+						info = socket_cliente.recv()
+						socket_cliente.send_string("Siga")
+						entrada.write(info)
+						entrada.close()
+				socket_cliente.recv_string()
+
 			socket_cliente.disconnect(address)
 			print("Termine")
 			conectado=False
+			break
 			sys.exit()
 
 		if(op==2):
