@@ -109,7 +109,26 @@ def Server(canal_servidor, port, mi_nodo,contexto):
 	while True:
 		mensaje = canal_servidor.recv_json()
 		#condicional por medio del cual el nodo entrante busca su puesto en el chord
-		if (mensaje["op"] == "conexion"):
+		if (mensaje["op"] == "roteme_partes"):
+			archivos = mi_nodo.GetArchivos()
+			archivos_to_send ={}
+			if not archivos:
+				print("Diccionario de archivos vacios, nada para enviar")
+			else:
+				for llave in archivos:
+					if(Verificar(llave,mensaje["mi_x"], mi_nodo.GetX()-1)):
+						archivos_to_send[llave] = archivos[llave]
+				canal_servidor.send_json({"op" : "rotando_partes", "lista_partes": archivos_to_send})
+				canal_servidor.recv_string()
+
+				for llavesita in archivos_to_send:
+					with open(archivos_to_send[llavesita], "rb") as entrada:
+						info = entrada.read()
+						canal_servidor.send(info)
+						os.remove(archivos_to_send[llavesita])
+						del archivos[llavesita]
+
+		elif (mensaje["op"] == "conexion"):
 			print("\n")
 			print("Se esta conectado a mi el nodo "+str(mensaje["id"]))
 			entrada_nodo_id = mensaje["id"]
@@ -124,7 +143,7 @@ def Server(canal_servidor, port, mi_nodo,contexto):
 				print("Lo siento, te comunico con un nodo sucesor.")
 				table = mi_nodo.GetFinger()
 				data=encontrarNodo(table,entrada_nodo_id,1)
-			canal_servidor.send_json(data)	
+			canal_servidor.send_json(data)
 		#Condicional que nos permite actualizar la finger table del nodo que esta ingresando.
 		elif(mensaje["op"] == "actualizando"):
 			#print("Actualizando Inicio  --- Actualizando finger del nuevo")
@@ -351,12 +370,28 @@ def main():
 
 			sucesor={"id": sucesor_finger[key_sucesor]["id"], "ip": sucesor_finger[key_sucesor]["ip"], "puerto": sucesor_finger[key_sucesor]["puerto"]}
 			solicitud = {"op": "rueda_la_bola" , "id": nuevo.GetId(), "rx": nuevo.GetX(), "ry": nuevo.GetY(),"rxi":xsucesor , "ryi": ysucesor, "ip": nuevo.GetIp(), "puerto": nuevo.GetPuerto(), "start": nuevo.GetId()}
-
 			socket_cliente.disconnect(address)
 			address = "tcp://"+sucesor["ip"]+":"+sucesor["puerto"]
 			socket_cliente.connect(address)
 			socket_cliente.send_json(solicitud)
 			socket_cliente.recv_string()
+
+			#Recibiendo los archivos que me corresponden
+
+			solicitud_partes = {"op": "roteme_partes","mi_x":nuevo.GetX()}
+			socket_cliente.send_json(solicitud_partes)
+			responde = socket_cliente.recv_json()
+
+			if(responde == "rotando_partes"):
+				partes = responde["lista_partes"]
+				socket_cliente.send_string("Mandelas")
+				for llave in partes:
+					with open(partes[llave], "ab+") as entrada:
+						info = canal_servidor.recv()
+						entrada.write(info)
+					entrada.close()
+
+
 
 	while conectado:
 		print("Escoger la opcion:")
@@ -404,9 +439,13 @@ def main():
 					to_write = str(key)+"-"+filename+str(i+1)+extension+"\n"
 					resultados.write(to_write.encode('utf-8'))
 					print("Parte en el ID: "+str(key))
+
+					archivos_nuevos = nuevo.GetArchivos()
+
 					if(Verificar(key,nuevo.GetX(),nuevo.GetY())):
+						archivos_nuevos[key] = filename+str(i+1)+extension
 						data_part=entrada.read(1024*1024)
-						with open(filename+str(i+1)+extension,"ab+") as output:
+						with open(filename+str(i+1)+extension,"ab+") as output:	
 							output.write(data_part)
 					else:
 						data={"op": "cargar_parte", "llave": key}
@@ -435,8 +474,11 @@ def main():
 								socket_cliente.connect(address)
 
 
+					nuevo.SetArchivos(archivos_nuevos)
 					print("Enviada")
 					i+=1
+			resultados.close()
+			print("Partes enviadas")
 
 
 		if(op==3):
