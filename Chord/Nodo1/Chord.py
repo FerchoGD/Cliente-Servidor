@@ -48,20 +48,16 @@ class Nodo():
 	#Recibiendo y actualizando con una nueva finger
 	def Actualizar_Finger(self,table):
 		for key in table:
-			#print("Llave: "+str(key)+" "+str(self.finger_table[key]))
-			#print(table[key])
 			self.finger_table[key] = table[key]
 
 	#Imprimir finger Table
 	def Mostrar_Finger(self):
 		for key in self.finger_table:
 			print(str(key) +" "+str(self.finger_table[key]))
-			#print(self.finger_table[key])
 
 	def Mostrar_Archivos(self):
 		for key in self.archivos:
 			print(str(key) +" "+str(self.archivos[key]))
-			#print(self.finger_table[key])
 			
 #Funcion para verificar si estoy en el rango del nodo
 def Verificar(id_entrada, mi_x, mi_y):
@@ -102,14 +98,38 @@ def encontrarNodo(table,entrada_nodo_id,op):
 	return data
 
 
+def siguienteNodo(msj):
+	sgte_id =  msj["id"]
+	sgte_ip = msj["ip"]
+	sgte_port = msj["puerto"]
+	address = "tcp://"+sgte_ip+":"+sgte_port
+	return address
+
 #Funcion que se ejecuta en el hilo que queda esperando el ingreso de un mensaje
 def Server(canal_servidor, port, mi_nodo,contexto):
 	canal_servidor.bind("tcp://*:"+port)
 
 	while True:
 		mensaje = canal_servidor.recv_json()
+		#condicional por medio del cual el nodo entrante busca su puesto en el chord
+		if (mensaje["op"] == "conexion"):
+			print("\n")
+			print("Se esta conectado a mi el nodo "+str(mensaje["id"]))
+			entrada_nodo_id = mensaje["id"]
+			aqui_es = Verificar(entrada_nodo_id, mi_nodo.GetX(), mi_nodo.GetY())
+			#Si el nodo entrante esta en el rango de llaves del nodo de ingreso.
+			if(aqui_es):
+				data={"op": "si", "x":mi_nodo.GetX() , "y":entrada_nodo_id}
+				mi_nodo.SetX((entrada_nodo_id+1) % cant_nodos)
+				mi_nodo.SetY((mi_nodo.GetId())% cant_nodos)
+				print("Rango: "+str(mi_nodo.GetX()) +" - "+ str(mi_nodo.GetY()))	
+			else:
+				print("Lo siento, te comunico con un nodo sucesor.")
+				table = mi_nodo.GetFinger()
+				data=encontrarNodo(table,entrada_nodo_id,1)
+			canal_servidor.send_json(data)
 		#Pasando los archivos al nuevo nodo que se conecta
-		if (mensaje["op"] == "roteme_partes"):
+		elif (mensaje["op"] == "roteme_partes"):
 			archivos = mi_nodo.GetArchivos()
 			archivos_to_send ={}
 			if not archivos:
@@ -151,27 +171,6 @@ def Server(canal_servidor, port, mi_nodo,contexto):
 						entrada.close()
 						canal_servidor.send_string("siga")
 				print("Transferencia de archivos por SALIDA del nodo exitosa")
-
-
-
-
-		#condicional por medio del cual el nodo entrante busca su puesto en el chord
-		elif (mensaje["op"] == "conexion"):
-			print("\n")
-			print("Se esta conectado a mi el nodo "+str(mensaje["id"]))
-			entrada_nodo_id = mensaje["id"]
-			aqui_es = Verificar(entrada_nodo_id, mi_nodo.GetX(), mi_nodo.GetY())
-			#Si el nodo entrante esta en el rango de llaves del nodo de ingreso.
-			if(aqui_es):
-				data={"op": "si", "x":mi_nodo.GetX() , "y":entrada_nodo_id}
-				mi_nodo.SetX((entrada_nodo_id+1) % cant_nodos)
-				mi_nodo.SetY((mi_nodo.GetId())% cant_nodos)
-				print("Rango: "+str(mi_nodo.GetX()) +" - "+ str(mi_nodo.GetY()))	
-			else:
-				print("Lo siento, te comunico con un nodo sucesor.")
-				table = mi_nodo.GetFinger()
-				data=encontrarNodo(table,entrada_nodo_id,1)
-			canal_servidor.send_json(data)
 		#Condicional que nos permite actualizar la finger table del nodo que esta ingresando.
 		elif(mensaje["op"] == "actualizando"):
 			#print("Actualizando Inicio  --- Actualizando finger del nuevo")
@@ -188,8 +187,6 @@ def Server(canal_servidor, port, mi_nodo,contexto):
 			#print("Actualizando Fin")
 		#Condicional que ejecuta la orden de actualizacion de las finger tables.
 		elif(mensaje["op"] == "rueda_la_bola"):
-			
-			print("-------------------------------------------------")
 			#Actualizando Finger
 			finger = mi_nodo.GetFinger()
 			for key in finger:
@@ -200,7 +197,7 @@ def Server(canal_servidor, port, mi_nodo,contexto):
 					finger[key]["rangollave"]={"x": mensaje["rx"],"y":mensaje["ry"]}
 
 			canal_servidor.send_string("Listo")
-			print("RODANDO LA BOLA")
+			print("Rodando la bola")
 			mi_nodo.Actualizar_Finger(finger)
 			mi_nodo.Mostrar_Finger()			
 
@@ -253,7 +250,7 @@ def Server(canal_servidor, port, mi_nodo,contexto):
 
 			else:
 				table = mi_nodo.GetFinger()
-				data=encontrarNodo(table,entrada_nodo_id,1)
+				data=encontrarNodo(table,mensaje["llave"],1)
 				canal_servidor.send_json(data)
 
 		elif(mensaje["op"] == "enviando_parte"):
@@ -282,15 +279,10 @@ def Server(canal_servidor, port, mi_nodo,contexto):
 
 			else:
 				table = mi_nodo.GetFinger()
-				data=encontrarNodo(table,entrada_nodo_id,1)
+				data=encontrarNodo(table,int(mensaje["llave"]),1)
 				canal_servidor.send_json(data)
 
-				
-		
-
-
-
-			
+	
 def main():
 	#Solo para el ingreso del primer nodo del chord.
 	if(len(sys.argv) == 3):
@@ -380,12 +372,8 @@ def main():
 
 		#Condicion que se ejecuta cuando se necesita conectar al nodo siguiente de una finger_table de un nodo conocido
 		elif(respuesta["op"] == "siguiente"):
-			sgte_id =  respuesta["id"]
-			sgte_ip = respuesta["ip"]
-			sgte_port = respuesta["puerto"]
 			socket_cliente.disconnect(address)
-			address = "tcp://"+sgte_ip+":"+sgte_port
-
+			address = siguienteNodo(respuesta)
 		#Si el nodo se encuentra conectado, y su fingerTable actualizada 
 		if(conectado):
 			sucesor_finger = nuevo.GetFinger()
@@ -424,8 +412,6 @@ def main():
 			elif(responde["op"] ==  "nada_para_enviar"):
 				print("No hay archivos para recibir")
 
-
-
 	while conectado:
 		print("Escoger la opcion:")
 		print("1..Eliminar nodo")
@@ -436,6 +422,7 @@ def main():
 		op=int(input("Escoger la opcion:"))
 
 		if(op==1):
+			socket_cliente.disconnect(address)
 			sucesor_finger = nuevo.GetFinger()
 			key_sucesor = (nuevo.GetId() + 2 ** 0) % cant_nodos
 			xsucesor=sucesor_finger[key_sucesor]["rangollave"]["x"]
@@ -446,11 +433,7 @@ def main():
 			socket_cliente.connect(address)
 			socket_cliente.send_json(solicitud)
 			socket_cliente.recv_string()
-			
-
 			print("Pasando los archivos...")
-
-
 			archivos = nuevo.GetArchivos()
 
 			solicitud_partes = {"op": "pasandote_partes","partes":archivos}
@@ -521,16 +504,10 @@ def main():
 								print("Enviado con exito")
 
 							elif(msj["op"] == "siguiente"):
-								sgte_id =  msj["id"]
-								sgte_ip = msj["ip"]
-								sgte_port = msj["puerto"]
 								socket_cliente.disconnect(address)
-								address = "tcp://"+sgte_ip+":"+sgte_port
+								address = siguienteNodo(msj)
 								socket_cliente.connect(address)
-
-
-					
-					print("Enviada")
+						print("Enviada")		
 					i+=1
 				nuevo.SetArchivos(archivos_nuevos)
 			nuevo.Mostrar_Archivos()
@@ -542,7 +519,7 @@ def main():
 			filename = input("Digite el nombre del archivo: ")
 			extension =  input("Digite la extension del archivo: ")
 
-			resultado = open(filename+extension,"ab+")
+			resultado = open(filename+".mp3","ab+")
 			archivo = open(filename+".txt")
 			lineas = archivo.readlines()
 			for linea in lineas:
@@ -560,8 +537,7 @@ def main():
 					data={"op": "solicito_parte", "llave": llave, "parte": parte}
 					recibido = False
 
-					while not recibido:				
-						
+					while not recibido:									
 						socket_cliente.send_json(data) 
 						msj=socket_cliente.recv_json()
 						if(msj["op"] == "recibela"):
@@ -572,11 +548,8 @@ def main():
 							print("Recibido con exito")
 
 						elif(msj["op"] == "siguiente"):
-							sgte_id =  msj["id"]
-							sgte_ip = msj["ip"]
-							sgte_port = msj["puerto"]
 							socket_cliente.disconnect(address)
-							address = "tcp://"+sgte_ip+":"+sgte_port
+							address = siguienteNodo(msj)
 							socket_cliente.connect(address)	
 
 
