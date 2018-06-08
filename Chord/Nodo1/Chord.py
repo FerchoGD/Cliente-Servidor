@@ -149,7 +149,8 @@ def Server(canal_servidor, port, mi_nodo,contexto):
 						info = canal_servidor.recv() 
 						entrada.write(info)
 						entrada.close()
-						canal_servidor.send("siga")
+						canal_servidor.send_string("siga")
+				print("Transferencia de archivos por SALIDA del nodo exitosa")
 
 
 
@@ -457,17 +458,15 @@ def main():
 			responde = socket_cliente.recv_string()
 
 			if(responde == "mandame_partes"):
-				socket_cliente.send_string("Tomalas")
 				print("Partes a enviar son: ")
 				print(archivos)
-				for llave in partes:
-					with open(partes[llave], "ab+") as entrada:
-						print("Recibiendo info parte..."+llave)
-						info = socket_cliente.recv()
-						socket_cliente.send_string("Siga")
-						entrada.write(info)
+				for llave in archivos:
+					with open(archivos[llave], "rb+") as entrada:
+						print("Enviando info parte..."+str(llave))
+						info = entrada.read()
+						socket_cliente.send(info)
+						socket_cliente.recv_string()
 						entrada.close()
-				socket_cliente.recv_string()
 
 			socket_cliente.disconnect(address)
 			print("Termine")

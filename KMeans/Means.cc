@@ -448,7 +448,7 @@ int main(){
 
     Timer tTotal;    
 
-    KMeans kmeans(30,4499,404546);
+    KMeans kmeans(5,4499,404546);
     kmeans.run(points);
     cout << "Tiempo: " << tTotal.elapsed() << endl;
 
