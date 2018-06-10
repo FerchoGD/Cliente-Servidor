@@ -15,6 +15,7 @@ class Nodo():
 		self.finger_table = {}
 		self.archivos = {}
 		self.ip = ip
+		self.address=""
 		self.puerto = puerto
 		self.range_x = 0
 		self.range_y = 0
@@ -38,6 +39,10 @@ class Nodo():
 		return self.archivos
 	def SetArchivos(self,nuevos):
 		self.archivos = nuevos
+	def GetAddress(self):
+		return self.address
+	def SetAddress(self,address):
+		self.address= address
 
 	def Finger(self):
 		for i in range(0,pot):
@@ -83,7 +88,6 @@ def encontrarNodo(table,entrada_nodo_id,op):
 			else:
 				data={"op" : "no_es_llave", "id" : sgte_id, "ip": sgte_ip, "puerto": sgte_port}
 			return data
-
 		KeyFinal=llave
 	#print("No estoy en la finger")
 	sgte_id = table[KeyFinal]["id"]
@@ -120,6 +124,7 @@ def Server(canal_servidor,canal_cliente,conectarNode1, port, mi_nodo,contexto):
 				portn=mensaje["puerto"]
 				address = "tcp://"+ipn+":"+portn
 				canal_cliente.connect(address)
+				mi_nodo.SetAddress(address)
 				conectarNode1=False
 			print("Se esta conectado a mi el nodo "+str(mensaje["id"]))
 			entrada_nodo_id = mensaje["id"]
@@ -252,6 +257,7 @@ def Server(canal_servidor,canal_cliente,conectarNode1, port, mi_nodo,contexto):
 
 		elif(mensaje["op"]=="cargar_parte"):
 			if(Verificar(mensaje["llave"], mi_nodo.GetX(), mi_nodo.GetY())):
+				print("HOla")
 				mensaje = {"op":"enviela"}
 				canal_servidor.send_json(mensaje)
 
@@ -295,8 +301,8 @@ def main():
 	if(len(sys.argv) == 3):
 		my_ip = sys.argv[1]
 		my_port = sys.argv[2]
-		ide = random.randrange(0,cant_nodos-1)
-		#ide=int(input("Id : "))
+		#ide = random.randrange(0,cant_nodos-1)
+		ide=int(input("Id : "))
 		print(ide)
 		nuevo = Nodo(my_ip, my_port,ide)
 		comp_x = ide + 1
@@ -311,8 +317,8 @@ def main():
 	if(len(sys.argv) == 5):
 		my_ip = sys.argv[1]
 		my_port = sys.argv[2]
-		ide = random.randrange(0,cant_nodos-1)
-		#ide=int(input("Id : "))
+		#ide = random.randrange(0,cant_nodos-1)
+		ide=int(input("Id : "))
 		print(ide)
 		print("\n")
 		nuevo = Nodo(my_ip, my_port,ide)
@@ -459,6 +465,7 @@ def main():
 						socket_cliente.send(info)
 						socket_cliente.recv_string()
 						entrada.close()
+						os.remove(archivos[llave])
 
 			socket_cliente.disconnect(address)
 			print("Termine")
@@ -496,6 +503,15 @@ def main():
 							output.write(data_part)
 					else:
 						data={"op": "cargar_parte", "llave": key}
+						finger=nuevo.GetFinger()
+						for key1 in finger:
+							if(Verificar(key, finger[key1]["rangollave"]["x"], finger[key1]["rangollave"]["y"])):
+								ips = finger[key1]["ip"]
+								ports = finger[key1]["puerto"]
+						
+						socket_cliente.disconnect(address)
+						address = "tcp://"+ips+":"+ports
+						socket_cliente.connect(address)
 
 						while not enviado:				
 							
@@ -513,6 +529,8 @@ def main():
 								print("Enviado con exito")
 
 							elif(msj["op"] == "siguiente"):
+								if(conectarNode1):
+									address=nuevo.GetAddress()
 								socket_cliente.disconnect(address)
 								address = siguienteNodo(msj)
 								socket_cliente.connect(address)
@@ -545,6 +563,15 @@ def main():
 				else:
 					data={"op": "solicito_parte", "llave": llave, "parte": parte}
 					recibido = False
+					finger=nuevo.GetFinger()
+					for key1 in finger:
+						if(Verificar(llave, finger[key1]["rangollave"]["x"], finger[key1]["rangollave"]["y"])):
+							ips = finger[key1]["ip"]
+							ports = finger[key1]["puerto"]
+					
+					socket_cliente.disconnect(address)
+					address = "tcp://"+ips+":"+ports
+					socket_cliente.connect(address)
 
 					while not recibido:									
 						socket_cliente.send_json(data) 
@@ -557,6 +584,8 @@ def main():
 							print("Recibido con exito")
 
 						elif(msj["op"] == "siguiente"):
+							if(conectarNode1):
+									address=nuevo.GetAddress()
 							socket_cliente.disconnect(address)
 							address = siguienteNodo(msj)
 							socket_cliente.connect(address)	
