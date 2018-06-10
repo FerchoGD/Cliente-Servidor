@@ -6,7 +6,6 @@ import zmq
 import os
 import math
 from time import sleep
-
 cant_nodos = 64
 pot = int(math.log2(cant_nodos)) 
 class Nodo():
@@ -106,14 +105,22 @@ def siguienteNodo(msj):
 	return address
 
 #Funcion que se ejecuta en el hilo que queda esperando el ingreso de un mensaje
-def Server(canal_servidor, port, mi_nodo,contexto):
+def Server(canal_servidor,canal_cliente,conectarNode1, port, mi_nodo,contexto):
 	canal_servidor.bind("tcp://*:"+port)
 
 	while True:
 		mensaje = canal_servidor.recv_json()
+		print(mensaje)
+		
 		#condicional por medio del cual el nodo entrante busca su puesto en el chord
 		if (mensaje["op"] == "conexion"):
 			print("\n")
+			if(conectarNode1):
+				ipn=mensaje['ip']
+				portn=mensaje["puerto"]
+				address = "tcp://"+ipn+":"+portn
+				canal_cliente.connect(address)
+				conectarNode1=False
 			print("Se esta conectado a mi el nodo "+str(mensaje["id"]))
 			entrada_nodo_id = mensaje["id"]
 			aqui_es = Verificar(entrada_nodo_id, mi_nodo.GetX(), mi_nodo.GetY())
@@ -299,6 +306,7 @@ def main():
 		nuevo.SetY(comp_y)
 		nuevo.Finger()
 		conectado = True
+		conectarNode1=True
 	#Se ejecuta del segundo nodo en adelante
 	if(len(sys.argv) == 5):
 		my_ip = sys.argv[1]
@@ -315,12 +323,13 @@ def main():
 
 		address = "tcp://"+other_ip+":"+other_port
 		conectado = False
+		conectarNode1=False
 
 	#Se crea el contexto y se ejecuta el hilo de escucha.
 	context= zmq.Context()
 	socket_cliente = context.socket(zmq.REQ)
 	socket_servidor = context.socket(zmq.REP)
-	thread_server = threading.Thread(target=Server, args=(socket_servidor, my_port, nuevo, context))
+	thread_server = threading.Thread(target=Server, args=(socket_servidor,socket_cliente,conectarNode1, my_port, nuevo, context))
 	thread_server.start()
 
 	#Ciclo para conectar nodo
