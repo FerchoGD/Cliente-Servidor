@@ -140,6 +140,59 @@ def Server(canal_servidor,canal_cliente,conectarNode1, port, mi_nodo,contexto):
 				table = mi_nodo.GetFinger()
 				data=encontrarNodo(table,entrada_nodo_id,1)
 			canal_servidor.send_json(data)
+
+		#Condicion para aceptar el torrent
+		elif(mensaje["op"] == "toma_un_torrent"):
+			archivo_to_recv = mensaje["nombre"]
+			inicio = mensaje["start"]
+			canal_servidor.send_json({"op": "dame_torrent"})
+			contenido = canal_servidor.recv()
+			resultado = open(archivo_to_recv+".txt","ab+")
+			resultado.write(contenido)
+			resultado.close()
+			canal_servidor.send_string("Gracias")
+			finger = mi_nodo.GetFinger()
+			if(inicio != finger[(mi_nodo.GetId() + 2 ** 0) % cant_nodos]["id"]):
+				socket_sucesor = contexto.socket(zmq.REQ)
+				key_sucesor = (mi_nodo.GetId() + 2**0) % cant_nodos
+				ip_sucesor = finger[key_sucesor]["ip"]
+				puerto_sucesor = finger[key_sucesor]["puerto"]
+				dir_sucesor = "tcp://"+ip_sucesor+":"+puerto_sucesor
+				solicitud = {"op": "rota_el_torrent" , "nombre": archivo_to_recv ,"start": inicio}
+				socket_sucesor.connect(dir_sucesor)
+				socket_sucesor.send_json(solicitud)
+				socket_sucesor.recv_string()
+				socket_sucesor.send(contenido)
+				socket_sucesor.recv_string()
+				socket_sucesor.disconnect(dir_sucesor)
+		
+		#Condicion para seguir rotando el torrent
+		elif(mensaje["op"] == "rota_el_torrent"):
+			archivo_to_recv = mensaje["nombre"]
+			inicio = mensaje["start"]
+			canal_servidor.send_string("Pasalo")
+			informacion = canal_servidor.recv()
+			canal_servidor.send_string("listo")
+			archivo = open(archivo_to_recv+".txt", "ab+")
+			archivo.write(informacion)
+			archivo.close()
+			finger = mi_nodo.GetFinger()
+			if(inicio != finger[(mi_nodo.GetId() + 2 ** 0) % cant_nodos]["id"]):
+				socket_sucesor = contexto.socket(zmq.REQ)
+				key_sucesor = (mi_nodo.GetId() + 2**0) % cant_nodos
+				ip_sucesor = finger[key_sucesor]["ip"]
+				puerto_sucesor = finger[key_sucesor]["puerto"]
+				dir_sucesor = "tcp://"+ip_sucesor+":"+puerto_sucesor
+				solicitud = {"op": "rota_el_torrent" , "nombre": archivo_to_recv ,"start": inicio}
+				socket_sucesor.connect(dir_sucesor)
+				socket_sucesor.send_json(solicitud)
+				socket_sucesor.recv_string()
+				socket_sucesor.send(contenido)
+				socket_sucesor.disconnect(dir_sucesor)
+
+
+
+
 		#Pasando los archivos al nuevo nodo que se conecta
 		elif (mensaje["op"] == "roteme_partes"):
 			archivos = mi_nodo.GetArchivos()
@@ -437,7 +490,8 @@ def main():
 		op=int(input("Escoger la opcion:"))
 
 		if(op==1):
-			socket_cliente.disconnect(address)
+			if(not(conectarNode1)):
+				socket_cliente.disconnect(address)
 			sucesor_finger = nuevo.GetFinger()
 			key_sucesor = (nuevo.GetId() + 2 ** 0) % cant_nodos
 			xsucesor=sucesor_finger[key_sucesor]["rangollave"]["x"]
@@ -504,13 +558,21 @@ def main():
 					else:
 						data={"op": "cargar_parte", "llave": key}
 						finger=nuevo.GetFinger()
+
+						if(not (conectarNode1)):
+							socket_cliente.disconnect(address)
+
+						encontrado=False
 						for key1 in finger:
 							if(Verificar(key, finger[key1]["rangollave"]["x"], finger[key1]["rangollave"]["y"])):
 								ips = finger[key1]["ip"]
 								ports = finger[key1]["puerto"]
-						
-						socket_cliente.disconnect(address)
-						address = "tcp://"+ips+":"+ports
+								encontrado = True
+						if(not(encontrado)):
+							datos_sgte = encontrarNodo(finger,key,1)
+							ips = datos_sgte["ip"]
+							ports = datos_sgte["port"]
+						address = "tcp://"+ips+":"+ports			
 						socket_cliente.connect(address)
 
 						while not enviado:				
@@ -537,9 +599,30 @@ def main():
 						print("Enviada")		
 					i+=1
 				nuevo.SetArchivos(archivos_nuevos)
-			nuevo.Mostrar_Archivos()
 			resultados.close()
+			nuevo.Mostrar_Archivos()
+			
 			print("Partes enviadas")
+			resultados = open(filename+".txt","rb+")
+			torrent = {"op":"toma_un_torrent", "nombre": filename, "start" : nuevo.GetId()}			
+			socket_cliente.disconnect(address)
+			sucesor_finger = nuevo.GetFinger()
+			key_sucesor = (nuevo.GetId() + 2 ** 0) % cant_nodos
+			sucesor_ip = sucesor_finger[key_sucesor]["ip"]
+			sucesor_puerto = sucesor_finger[key_sucesor]["puerto"]
+			address = "tcp://"+sucesor_ip+":"+sucesor_puerto
+			socket_cliente.connect(address)
+			socket_cliente.send_json(torrent)
+			new_msj = socket_cliente.recv_json()
+			if(new_msj["op"] == "dame_torrent"):
+				info_to_send = resultados.read()
+				socket_cliente.send(info_to_send)
+				socket_cliente.recv_string()
+			print("Torrent enviado...")
+			resultados.close()
+
+
+
 
 
 		if(op==3):
