@@ -6,7 +6,7 @@ import zmq
 import os
 import math
 from time import sleep
-cant_nodos = 64
+cant_nodos = 1024
 pot = int(math.log2(cant_nodos)) 
 class Nodo():
 
@@ -86,7 +86,7 @@ def Verificar(id_entrada, mi_x, mi_y):
 	return resultado
 
 #Funcion que permite recorrer la finger_table de un nodo y pasarnos los parametros de su sucesor ideal.
-def encontrarNodo(table,entrada_nodo_id,op):
+def encontrarNodo(idMio,table,entrada_nodo_id,op):
 	for llave in table:
 		if(Verificar(entrada_nodo_id,table[llave]["rangollave"]["x"],table[llave]["rangollave"]["y"])):
 			sgte_id = table[llave]["id"]
@@ -97,7 +97,8 @@ def encontrarNodo(table,entrada_nodo_id,op):
 			else:
 				data={"op" : "no_es_llave", "id" : sgte_id, "ip": sgte_ip, "puerto": sgte_port}
 			return data
-		KeyFinal=llave
+		if(idMio != table[llave]["id"]):
+			KeyFinal=llave
 	#print("No estoy en la finger")
 	sgte_id = table[KeyFinal]["id"]
 	sgte_ip = table[KeyFinal]["ip"]
@@ -147,7 +148,7 @@ def Server(canal_servidor,canal_cliente,conectarNode1, port, mi_nodo,contexto):
 			else:
 				print("Lo siento, te comunico con un nodo sucesor.")
 				table = mi_nodo.GetFinger()
-				data=encontrarNodo(table,entrada_nodo_id,1)
+				data=encontrarNodo(mi_nodo.GetId(),table,entrada_nodo_id,1)
 			canal_servidor.send_json(data)
 
 
@@ -235,7 +236,7 @@ def Server(canal_servidor,canal_cliente,conectarNode1, port, mi_nodo,contexto):
 				msj = {"op": "es_llave", "id": mi_nodo.GetId(), "ip": mi_nodo.GetIp() , "puerto": mi_nodo.GetPuerto(), "rx" :mi_nodo.GetX(), "ry" : mi_nodo.GetY()}
 			else:
 				my_finger = mi_nodo.GetFinger()
-				msj=encontrarNodo(my_finger,llave_check,2)
+				msj=encontrarNodo(mi_nodo.GetId(),my_finger,llave_check,2)
 			canal_servidor.send_json(msj)
 			#print("Actualizando Fin")
 		#Condicional que ejecuta la orden de actualizacion de las finger tables.
@@ -304,7 +305,7 @@ def Server(canal_servidor,canal_cliente,conectarNode1, port, mi_nodo,contexto):
 
 			else:
 				table = mi_nodo.GetFinger()
-				data=encontrarNodo(table,mensaje["llave"],1)
+				data=encontrarNodo(mi_nodo.GetId(),table,mensaje["llave"],1)
 				canal_servidor.send_json(data)
 
 		elif(mensaje["op"] == "enviando_parte"):
@@ -333,7 +334,7 @@ def Server(canal_servidor,canal_cliente,conectarNode1, port, mi_nodo,contexto):
 
 			else:
 				table = mi_nodo.GetFinger()
-				data=encontrarNodo(table,int(mensaje["llave"]),1)
+				data=encontrarNodo(mi_nodo.GetId(),table,int(mensaje["llave"]),1)
 				canal_servidor.send_json(data)
 
 	
@@ -533,7 +534,7 @@ def main():
 				archivos_nuevos = nuevo.GetArchivos()
 				while i<=lim:
 					enviado = False
-					key = random.randrange(0,cant_nodos-1)
+					key = int(random.uniform(0,cant_nodos-1))
 					to_write = str(key)+"-"+filename+str(i+1)+extension+"\n"
 					resultados.write(to_write.encode('utf-8'))
 					print("Parte en el ID: "+str(key))					
@@ -560,7 +561,7 @@ def main():
 								ports = finger[key1]["puerto"]
 								encontrado = True
 						if(not(encontrado)):
-							datos_sgte = encontrarNodo(finger,key,1)
+							datos_sgte = encontrarNodo(nuevo.GetId(),finger,key,1)
 							ips = datos_sgte["ip"]
 							ports = datos_sgte["puerto"]
 						address = "tcp://"+ips+":"+ports			
@@ -613,7 +614,7 @@ def main():
 
 		if(op==3):
 			filename = input("Digite el nombre del archivo: ")
-			resultado = open(filename+".mp3","ab+")
+			resultado = open(filename+".mp4","ab+")
 
 			if not (os.path.isfile(filename+".txt")):
 				ip_connect = nuevo.GetTorrents()[filename]["ip"]
@@ -648,7 +649,7 @@ def main():
 					recibido = False
 					finger=nuevo.GetFinger()
 					
-					datos_sgte = encontrarNodo(finger,int(llave),1)
+					datos_sgte = encontrarNodo(nuevo.GetId(),finger,int(llave),1)
 					ips = datos_sgte["ip"]
 					ports = datos_sgte["puerto"]
 					
