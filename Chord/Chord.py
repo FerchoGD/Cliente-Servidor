@@ -343,8 +343,8 @@ def main():
 	if(len(sys.argv) == 3):
 		my_ip = sys.argv[1]
 		my_port = sys.argv[2]
-		#ide = random.randrange(0,cant_nodos-1)
-		ide=int(input("Id : "))
+		ide = random.randrange(0,cant_nodos-1)
+		#ide=int(input("Id : "))
 		print(ide)
 		nuevo = Nodo(my_ip, my_port,ide)
 		comp_x = ide + 1
@@ -359,8 +359,8 @@ def main():
 	if(len(sys.argv) == 5):
 		my_ip = sys.argv[1]
 		my_port = sys.argv[2]
-		#ide = random.randrange(0,cant_nodos-1)
-		ide=int(input("Id : "))
+		ide = random.randrange(0,cant_nodos-1)
+		#ide=int(input("Id : "))
 		print(ide)
 		print("\n")
 		nuevo = Nodo(my_ip, my_port,ide)
