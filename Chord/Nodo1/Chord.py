@@ -64,7 +64,7 @@ class Nodo():
 	#Imprimir finger Table
 	def Mostrar_Finger(self):
 		for key in self.finger_table:
-			print(str(key) +" "+str(self.finger_table[key]))
+			print(str(key) +" Nodo: "+str(self.finger_table[key]["id"])+"-Ip: "+str(self.finger_table[key]["ip"])+"-Puerto: "+str(self.finger_table[key]["puerto"]))
 
 	def Mostrar_Archivos(self):
 		for key in self.archivos:
@@ -489,6 +489,7 @@ def main():
 
 
 	while conectado:
+		print("\n")
 		print("Escoger la opcion:")
 		print("1..Eliminar nodo")
 		print("2..Subir archivo")
@@ -497,6 +498,7 @@ def main():
 		print("\n")
 		
 		op=int(input("Escoger la opcion:"))
+		print("\n")
 
 		if(op==1):
 			if(not(conectarNode1)):
