@@ -101,11 +101,11 @@ def encontrarNodo(idMio,table,entrada_nodo_id,op):
 			return data
 		if(idMio != table[llave]["id"]):
 			KeyFinal=llave
-	#print("No estoy en la finger")
+	##print("No estoy en la finger")
 	sgte_id = table[KeyFinal]["id"]
 	sgte_ip = table[KeyFinal]["ip"]
 	sgte_port = table[KeyFinal]["puerto"]
-	#print(str(sgte_id)+"  "+str(sgte_ip)+" "+str(sgte_port))
+	##print(str(sgte_id)+"  "+str(sgte_ip)+" "+str(sgte_port))
 	if(op==1):
 		data={"op" : "siguiente", "id" : sgte_id, "ip": sgte_ip, "puerto": sgte_port}
 	else:
@@ -126,11 +126,11 @@ def Server(canal_servidor,canal_cliente,conectarNode1, port, mi_nodo,contexto):
 
 	while True:
 		mensaje = canal_servidor.recv_json()
-		print(mensaje)
+		#print(mensaje)
 		
 		#condicional por medio del cual el nodo entrante busca su puesto en el chord
 		if (mensaje["op"] == "conexion"):
-			print("\n")
+			#print("\n")
 			if(conectarNode1):
 				ipn=mensaje['ip']
 				portn=mensaje["puerto"]
@@ -138,7 +138,7 @@ def Server(canal_servidor,canal_cliente,conectarNode1, port, mi_nodo,contexto):
 				canal_cliente.connect(address)
 				mi_nodo.SetAddress(address)
 				conectarNode1=False
-			print("Se esta conectado a mi el nodo "+str(mensaje["id"]))
+			#print("Se esta conectado a mi el nodo "+str(mensaje["id"]))
 			entrada_nodo_id = mensaje["id"]
 			aqui_es = Verificar(entrada_nodo_id, mi_nodo.GetX(), mi_nodo.GetY())
 			#Si el nodo entrante esta en el rango de llaves del nodo de ingreso.
@@ -146,9 +146,9 @@ def Server(canal_servidor,canal_cliente,conectarNode1, port, mi_nodo,contexto):
 				data={"op": "si", "x":mi_nodo.GetX() , "y":entrada_nodo_id}
 				mi_nodo.SetX((entrada_nodo_id+1) % cant_nodos)
 				mi_nodo.SetY((mi_nodo.GetId())% cant_nodos)
-				print("Rango: "+str(mi_nodo.GetX()) +" - "+ str(mi_nodo.GetY()))	
+				#print("Rango: "+str(mi_nodo.GetX()) +" - "+ str(mi_nodo.GetY()))	
 			else:
-				print("Lo siento, te comunico con un nodo sucesor.")
+				#print("Lo siento, te comunico con un nodo sucesor.")
 				table = mi_nodo.GetFinger()
 				data=encontrarNodo(mi_nodo.GetId(),table,entrada_nodo_id,1)
 			canal_servidor.send_json(data)
@@ -171,8 +171,8 @@ def Server(canal_servidor,canal_cliente,conectarNode1, port, mi_nodo,contexto):
 			msj_puerto = mensaje["puerto"]
 			canal_servidor.send_string("recibido")
 			mi_nodo.AddTorrent(archivo_to_recv, msj_ip, msj_puerto)
-			print("Torrent agregado..")
-			mi_nodo.Mostrar_Torrents()
+			#print("Torrent agregado..")
+			#mi_nodo.Mostrar_Torrents()
 			finger = mi_nodo.GetFinger()
 			if(msj_puerto != finger[(mi_nodo.GetId() + 2 ** 0) % cant_nodos]["puerto"]):
 				socket_sucesor = contexto.socket(zmq.REQ)
@@ -193,21 +193,21 @@ def Server(canal_servidor,canal_cliente,conectarNode1, port, mi_nodo,contexto):
 			archivos = mi_nodo.GetArchivos()
 			archivos_to_send ={}
 			if not archivos:
-				print("Diccionario de archivos vacios, nada para enviar")
+				#print("Diccionario de archivos vacios, nada para enviar")
 				canal_servidor.send_json({"op": "nada_para_enviar"})
 			else:
 				for llave in archivos:
 					if(Verificar(llave,mensaje["mi_x"], mi_nodo.GetX()-1)):
-						print("Llave a rotar: "+str(llave))
+						#print("Llave a rotar: "+str(llave))
 						archivos_to_send[llave] = archivos[llave]
 				canal_servidor.send_json({"op" : "rotando_partes", "lista_partes": archivos_to_send})
 				canal_servidor.recv_string()
-				print("Archivos a enviar: ")
-				print(archivos_to_send)
+				#print("Archivos a enviar: ")
+				#print(archivos_to_send)
 
 				for llavesita in archivos_to_send:
 					with open(archivos_to_send[llavesita], "rb") as entrada:
-						print(llavesita)
+						#print(llavesita)
 						info = entrada.read()
 						canal_servidor.send(info)
 						canal_servidor.recv_string()
@@ -225,26 +225,26 @@ def Server(canal_servidor,canal_cliente,conectarNode1, port, mi_nodo,contexto):
 				for key in archivos_to_recv:
 					mis_archivos[key] = archivos_to_recv[key]
 					with open(archivos_to_recv[key], "ab+") as entrada:
-						print(key)
+						#print(key)
 						info = canal_servidor.recv() 
 						entrada.write(info)
 						entrada.close()
 						canal_servidor.send_string("siga")
-				print("Transferencia de archivos por SALIDA del nodo exitosa")
+				#print("Transferencia de archivos por SALIDA del nodo exitosa")
 		#Condicional que nos permite actualizar la finger table del nodo que esta ingresando.
 		elif(mensaje["op"] == "actualizando"):
-			#print("Actualizando Inicio  --- Actualizando finger del nuevo")
+			##print("Actualizando Inicio  --- Actualizando finger del nuevo")
 			#mi_nodo.Mostrar_Finger()
 			llave_check = mensaje["llave"]
-			#print(llave_check)
+			##print(llave_check)
 			if(Verificar(llave_check, mi_nodo.GetX(), mi_nodo.GetY())):
-				#print("SI estoy")
+				##print("SI estoy")
 				msj = {"op": "es_llave", "id": mi_nodo.GetId(), "ip": mi_nodo.GetIp() , "puerto": mi_nodo.GetPuerto(), "rx" :mi_nodo.GetX(), "ry" : mi_nodo.GetY()}
 			else:
 				my_finger = mi_nodo.GetFinger()
 				msj=encontrarNodo(mi_nodo.GetId(),my_finger,llave_check,2)
 			canal_servidor.send_json(msj)
-			#print("Actualizando Fin")
+			##print("Actualizando Fin")
 		#Condicional que ejecuta la orden de actualizacion de las finger tables.
 		elif(mensaje["op"] == "rueda_la_bola"):
 			#Actualizando Finger
@@ -257,9 +257,9 @@ def Server(canal_servidor,canal_cliente,conectarNode1, port, mi_nodo,contexto):
 					finger[key]["rangollave"]={"x": mensaje["rx"],"y":mensaje["ry"]}
 
 			canal_servidor.send_string("Listo")
-			print("Rodando la bola")
+			#print("Rodando la bola")
 			mi_nodo.Actualizar_Finger(finger)
-			mi_nodo.Mostrar_Finger()			
+			#mi_nodo.Mostrar_Finger()			
 
 			if(mensaje["start"] != finger[(mi_nodo.GetId() + 2 ** 0) % cant_nodos]["id"]):
 				socket_sucesor = contexto.socket(zmq.REQ)
@@ -275,7 +275,7 @@ def Server(canal_servidor,canal_cliente,conectarNode1, port, mi_nodo,contexto):
 		elif(mensaje["op"] == "Eliminar_nodo"):
 			if(mensaje["stop"]):
 				mi_nodo.SetX(mensaje["rxi"])
-			print("Rango: "+str(mi_nodo.GetX()) +" - "+ str(mi_nodo.GetY()))
+			#print("Rango: "+str(mi_nodo.GetX()) +" - "+ str(mi_nodo.GetY()))
 			finger = mi_nodo.GetFinger()
 			for key in finger:
 				if(Verificar(key, mensaje["rxi"], mensaje["ryi"])):
@@ -285,18 +285,18 @@ def Server(canal_servidor,canal_cliente,conectarNode1, port, mi_nodo,contexto):
 					finger[key]["rangollave"]={"x": mensaje["rxi"],"y":mensaje["ryi"]}
 
 			canal_servidor.send_string("Listo")
-			print("Eliminar_nodo")
+			#print("Eliminar_nodo")
 			mi_nodo.Actualizar_Finger(finger)
-			mi_nodo.Mostrar_Finger()	
+			#mi_nodo.Mostrar_Finger()	
 			socket_sucesor = contexto.socket(zmq.REQ)
 			key_sucesor = (mi_nodo.GetId() + 2**0) % cant_nodos
 			id_sucesor = finger[key_sucesor]["id"]
 			ip_sucesor = finger[key_sucesor]["ip"]
 			puerto_sucesor = finger[key_sucesor]["puerto"]		
-			print(key_sucesor)
-			print(mensaje["start"])
+			#print(key_sucesor)
+			#print(mensaje["start"])
 			if(key_sucesor != mensaje["start"]):
-				print("holaaa")
+				#print("holaaa")
 				dir_sucesor = "tcp://"+ip_sucesor+":"+puerto_sucesor				
 				solicitud = {"op": "Eliminar_nodo" , "id": mensaje["id"], "rxi": mensaje["rxi"], "ryi": mensaje["ryi"],"ip": mensaje["ip"], "puerto": mensaje["puerto"], "start": mensaje["start"],"stop":False}
 				socket_sucesor.connect(dir_sucesor)
@@ -305,7 +305,7 @@ def Server(canal_servidor,canal_cliente,conectarNode1, port, mi_nodo,contexto):
 
 		elif(mensaje["op"]=="cargar_parte"):
 			if(Verificar(mensaje["llave"], mi_nodo.GetX(), mi_nodo.GetY())):
-				print("HOla")
+				#print("HOla")
 				mensaje = {"op":"enviela"}
 				canal_servidor.send_json(mensaje)
 
@@ -327,7 +327,7 @@ def Server(canal_servidor,canal_cliente,conectarNode1, port, mi_nodo,contexto):
 			with open(archivo+parte,"ab+") as output:
 				output.write(info_parte)
 			mi_nodo.SetArchivos(mis_archivos)
-			mi_nodo.Mostrar_Archivos()
+			#mi_nodo.Mostrar_Archivos()
 
 		elif(mensaje["op"] == "solicito_parte"):
 			if(Verificar(int(mensaje["llave"]), mi_nodo.GetX(), mi_nodo.GetY())):
@@ -351,7 +351,7 @@ def main():
 		my_port = sys.argv[2]
 		ide = random.randrange(0,cant_nodos-1)
 		#ide=int(input("Id : "))
-		print(ide)
+		#print(ide)
 		nuevo = Nodo(my_ip, my_port,ide)
 		comp_x = ide + 1
 		comp_y = ide
@@ -367,8 +367,8 @@ def main():
 		my_port = sys.argv[2]
 		ide = random.randrange(0,cant_nodos-1)
 		#ide=int(input("Id : "))
-		print(ide)
-		print("\n")
+		#print(ide)
+		#print("\n")
 		nuevo = Nodo(my_ip, my_port,ide)
 		nuevo.Finger()
 
@@ -397,27 +397,27 @@ def main():
 
 		#Condicional ejecutada despues de saber donde se debe conectar el nodo.
 		if(respuesta["op"] == "si"):
-			print(respuesta["op"])
+			#print(respuesta["op"])
 			nuevo.SetX(respuesta["x"])
 			nuevo.SetY(respuesta["y"])
-			print("Rango: "+str(nuevo.GetX()) +" -- "+ str(nuevo.GetY())+"\n")
+			#print("Rango: "+str(nuevo.GetX()) +" -- "+ str(nuevo.GetY())+"\n")
 			#Actualizando Finger
 			new_finger = {}
 			for i in range(0,pot):
 				encontrado = False
 				llave = (nuevo.GetId() + 2 ** i) % cant_nodos
-				#print(llave)
+				##print(llave)
 				
 				if(Verificar(llave,nuevo.GetX(),nuevo.GetY())):
 					new_finger[llave] = {"id" : nuevo.GetId(), "ip": nuevo.GetIp() , "puerto" : nuevo.GetPuerto(), "rangollave" : {"x" :nuevo.GetX(), "y" : nuevo.GetY()}}
-					#print("Me pertenece esta llave")
+					##print("Me pertenece esta llave")
 				else:
 					#Llenado de finger table
 					while not encontrado:
 						socket_cliente.send_json({"op": "actualizando", "llave": llave})
-						#print(llave)
+						##print(llave)
 						mensaje = socket_cliente.recv_json()
-						#print(mensaje)
+						##print(mensaje)
 						if (mensaje["op"] == "es_llave"):
 							new_finger[llave] = {"id" : mensaje["id"], "ip": mensaje["ip"] , "puerto" : mensaje["puerto"], "rangollave" : {"x" :mensaje["rx"], "y" :mensaje["ry"]}}
 							encontrado=True
@@ -428,9 +428,9 @@ def main():
 							address = "tcp://"+sgte_ip+":"+sgte_port
 							socket_cliente.connect(address)
 			nuevo.Actualizar_Finger(new_finger)
-			print("\n")
-			print("He Actualizado mi finger con exito"+"\n")
-			nuevo.Mostrar_Finger()
+			#print("\n")
+			#print("He Actualizado mi finger con exito"+"\n")
+			#nuevo.Mostrar_Finger()
 			conectado=True
 
 		#Condicion que se ejecuta cuando se necesita conectar al nodo siguiente de una finger_table de un nodo conocido
@@ -455,7 +455,7 @@ def main():
 			socket_cliente.recv_string()
 
 			#Recibiendo los archivos que me corresponden
-			print("Empezando a rotar archivos...")
+			#print("Empezando a rotar archivos...")
 
 			solicitud_partes = {"op": "roteme_partes","mi_x":nuevo.GetX()}
 			socket_cliente.send_json(solicitud_partes)
@@ -464,25 +464,26 @@ def main():
 			if(responde["op"] == "rotando_partes"):
 				partes = responde["lista_partes"]
 				socket_cliente.send_string("Mandelas")
-				print("Partes Recibidas son: ")
-				print(partes)
+				#print("Partes Recibidas son: ")
+				#print(partes)
 				for llave in partes:
 					with open(partes[llave], "ab+") as entrada:
-						print("Recibiendo info parte..."+llave)
+						#print("Recibiendo info parte..."+llave)
 						info = socket_cliente.recv()
 						socket_cliente.send_string("Siga")
 						entrada.write(info)
 						entrada.close()
 				socket_cliente.recv_string()
 			elif(responde["op"] ==  "nada_para_enviar"):
-				print("No hay archivos para recibir")
+				pass
+				#print("No hay archivos para recibir")
 
-			print("Recibiendo torrents existentes")
+			#print("Recibiendo torrents existentes")
 			solicitud_torrents = {"op": "torrent_soy_nuevo"}
 			socket_cliente.send_json(solicitud_torrents)
 			torrents_to_recv = socket_cliente.recv_json()
 			nuevo.SetTorrents(torrents_to_recv["torrents"])
-			nuevo.Mostrar_Torrents()
+			#nuevo.Mostrar_Torrents()
 
 
 
@@ -492,6 +493,7 @@ def main():
 		print("1..Eliminar nodo")
 		print("2..Subir archivo")
 		print("3..Bajar archivo")
+		print("4..Mostrar mi Finger Table")
 		print("\n")
 		
 		op=int(input("Escoger la opcion:"))
@@ -509,7 +511,7 @@ def main():
 			socket_cliente.connect(address)
 			socket_cliente.send_json(solicitud)
 			socket_cliente.recv_string()
-			print("Pasando los archivos...")
+			#print("Pasando los archivos...")
 			archivos = nuevo.GetArchivos()
 
 			solicitud_partes = {"op": "pasandote_partes","partes":archivos}
@@ -517,11 +519,11 @@ def main():
 			responde = socket_cliente.recv_string()
 
 			if(responde == "mandame_partes"):
-				print("Partes a enviar son: ")
-				print(archivos)
+				#print("Partes a enviar son: ")
+				#print(archivos)
 				for llave in archivos:
 					with open(archivos[llave], "rb+") as entrada:
-						print("Enviando info parte..."+str(llave))
+						#print("Enviando info parte..."+str(llave))
 						info = entrada.read()
 						socket_cliente.send(info)
 						socket_cliente.recv_string()
@@ -529,7 +531,7 @@ def main():
 						os.remove(archivos[llave])
 
 			socket_cliente.disconnect(address)
-			print("Termine")
+			#print("Termine")
 			conectado=False
 			break
 			sys.exit()
@@ -544,10 +546,10 @@ def main():
 				data = entrada.read()
 				tam = entrada.tell()
 				lim=tam/(1024*1024)
-				print("Tamaño: "+ str(tam))
+				#print("Tamaño: "+ str(tam))
 				parts=int(lim+1)
 				i=0
-				print ("Partes: "+ str(parts))
+				#print ("Partes: "+ str(parts))
 				entrada.seek(0)
 				archivos_nuevos = nuevo.GetArchivos()
 				while i<=lim:
@@ -555,7 +557,7 @@ def main():
 					key = int(random.uniform(0,cant_nodos-1))
 					to_write = str(key)+"-"+filename+str(i+1)+extension+"\n"
 					resultados.write(to_write.encode('utf-8'))
-					print("Parte en el ID: "+str(key))					
+					#print("Parte en el ID: "+str(key))					
 
 					if(Verificar(key,nuevo.GetX(),nuevo.GetY())):
 						archivos_nuevos[key] = filename+str(i+1)+extension
@@ -598,7 +600,7 @@ def main():
 								socket_cliente.send(data_part)
 								socket_cliente.recv_string()
 								enviado = True
-								print("Enviado con exito")
+								#print("Enviado con exito")
 
 							elif(msj["op"] == "siguiente"):								
 								if(conectarNode1):
@@ -606,13 +608,13 @@ def main():
 								socket_cliente.disconnect(address)
 								address = siguienteNodo(msj)
 								socket_cliente.connect(address)
-						print("Enviada")		
+						#print("Enviada")		
 					i+=1
 				nuevo.SetArchivos(archivos_nuevos)
 			resultados.close()
-			nuevo.Mostrar_Archivos()
+			#nuevo.Mostrar_Archivos()
 			
-			print("Partes enviadas")
+			#print("Partes enviadas")
 			nuevo.AddTorrent(filename, nuevo.GetIp(), nuevo.GetPuerto())
 			torrent = {"op":"toma_un_torrent", "nombre": filename, "ip": nuevo.GetIp(), "puerto": nuevo.GetPuerto()}			
 			socket_cliente.disconnect(address)
@@ -624,7 +626,7 @@ def main():
 			socket_cliente.connect(address)
 			socket_cliente.send_json(torrent)
 			socket_cliente.recv_string()
-			print("Torrent enviado...")
+			#print("Torrent enviado...")
 			resultados.close()
 
 
@@ -685,14 +687,22 @@ def main():
 							info_parte = socket_cliente.recv()
 							resultado.write(info_parte)
 							recibido = True
-							print("Recibido con exito")
+							#print("Recibido con exito")
 
 						elif(msj["op"] == "siguiente"):
 							if(conectarNode1):
 									address=nuevo.GetAddress()
 							socket_cliente.disconnect(address)
 							address = siguienteNodo(msj)
-							socket_cliente.connect(address)	
+							socket_cliente.connect(address)
 
+		if(op==4):
+			nuevo.Mostrar_Finger()
+
+		if(op==5):
+			nuevo.Mostrar_Archivos()
+
+		if(op==6):
+			nuevo.Mostrar_Torrents()
 
 main()
