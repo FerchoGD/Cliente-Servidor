@@ -44,6 +44,8 @@ class Nodo():
 		return self.torrents
 	def AddTorrent(self,nueva_llave, ip_pert, puerto_pert):
 		self.torrents[nueva_llave] = {"ip": ip_pert, "puerto": puerto_pert}
+	def SetTorrents(self, nuevos_torrents):
+		self.torrents = nuevos_torrents
 	def GetAddress(self):
 		return self.address
 	def SetAddress(self,address):
@@ -151,6 +153,10 @@ def Server(canal_servidor,canal_cliente,conectarNode1, port, mi_nodo,contexto):
 				data=encontrarNodo(mi_nodo.GetId(),table,entrada_nodo_id,1)
 			canal_servidor.send_json(data)
 
+		elif(mensaje["op"] == "torrent_soy_nuevo"):
+			mensaje_envio = {"torrents": mi_nodo.GetTorrents()}
+			canal_servidor.send_json(mensaje_envio)
+		
 
 		elif(mensaje["op"] == "pasame_el_torrent"):
 			filename = mensaje["nombre_torrent"]
@@ -469,6 +475,16 @@ def main():
 			elif(responde["op"] ==  "nada_para_enviar"):
 				print("No hay archivos para recibir")
 
+			print("Recibiendo torrents existentes")
+			solicitud_torrents = {"op": "torrent_soy_nuevo"}
+			socket_cliente.send_json(solicitud_torrents)
+			torrents_to_recv = socket_cliente.recv_json()
+			nuevo.SetTorrents(torrents_to_recv["torrents"])
+			nuevo.Mostrar_Torrents()
+
+
+
+
 	while conectado:
 		print("Escoger la opcion:")
 		print("1..Eliminar nodo")
@@ -595,6 +611,7 @@ def main():
 			nuevo.Mostrar_Archivos()
 			
 			print("Partes enviadas")
+			nuevo.AddTorrent(filename, nuevo.GetIp(), nuevo.GetPuerto())
 			torrent = {"op":"toma_un_torrent", "nombre": filename, "ip": nuevo.GetIp(), "puerto": nuevo.GetPuerto()}			
 			socket_cliente.disconnect(address)
 			sucesor_finger = nuevo.GetFinger()
@@ -614,7 +631,8 @@ def main():
 
 		if(op==3):
 			filename = input("Digite el nombre del archivo: ")
-			resultado = open(filename+".mp4","ab+")
+			extension = input("Digite la extension del archivo")
+			resultado = open(filename+extension,"ab+")
 
 			if not (os.path.isfile(filename+".txt")):
 				ip_connect = nuevo.GetTorrents()[filename]["ip"]
