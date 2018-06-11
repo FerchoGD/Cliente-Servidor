@@ -447,7 +447,9 @@ def main():
 			sucesor={"id": sucesor_finger[key_sucesor]["id"], "ip": sucesor_finger[key_sucesor]["ip"], "puerto": sucesor_finger[key_sucesor]["puerto"]}
 			solicitud = {"op": "rueda_la_bola" , "id": nuevo.GetId(), "rx": nuevo.GetX(), "ry": nuevo.GetY(),"rxi":xsucesor , "ryi": ysucesor, "ip": nuevo.GetIp(), "puerto": nuevo.GetPuerto(), "start": nuevo.GetId()}
 			socket_cliente.disconnect(address)
-			address = "tcp://"+sucesor["ip"]+":"+sucesor["puerto"]
+			aux=nuevo.GetX() + (2 ** (pot-1))
+			data=encontrarNodo(nuevo.GetId(),nuevo.GetFinger(),aux,1)
+			address = "tcp://"+data["ip"]+":"+data["puerto"]
 			socket_cliente.connect(address)
 			socket_cliente.send_json(solicitud)
 			socket_cliente.recv_string()
