@@ -613,20 +613,22 @@ def main():
 
 		if(op==3):
 			filename = input("Digite el nombre del archivo: ")
-			extension =  input("Digite la extension del archivo: ")
-
 			resultado = open(filename+".mp3","ab+")
 
-			ip_connect = nuevo.GetTorrents()[filename]["ip"]
-			puerto_connect = nuevo.GetTorrents()[filename]["puerto"]
-			socket_cliente.disconnect(address)
-			address = "tcp://"+ip_connect+":"+puerto_connect
-			socket_cliente.connect(address)
-			socket_cliente.send_json({"op":"pasame_el_torrent", "nombre_torrent": filename})
-			info = socket_cliente.recv()
-			archivo = open(filename+".txt","ab+")
-			archivo.write(info)
-			archivo.close()
+			if not (os.path.isfile(filename+".txt")):
+				ip_connect = nuevo.GetTorrents()[filename]["ip"]
+				puerto_connect = nuevo.GetTorrents()[filename]["puerto"]
+				if(conectarNode1):
+					address=nuevo.GetAddress()
+					conectarNode1=False					
+				socket_cliente.disconnect(address)
+				address = "tcp://"+ip_connect+":"+puerto_connect
+				socket_cliente.connect(address)
+				socket_cliente.send_json({"op":"pasame_el_torrent", "nombre_torrent": filename})
+				info = socket_cliente.recv()
+				archivo = open(filename+".txt","ab+")
+				archivo.write(info)
+				archivo.close()
 
 			archivo = open(filename+".txt")
 			lineas = archivo.readlines()
