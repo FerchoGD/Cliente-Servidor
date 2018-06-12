@@ -64,7 +64,7 @@ class Nodo():
 	#Imprimir finger Table
 	def Mostrar_Finger(self):
 		for key in self.finger_table:
-			print(str(key) +" Nodo: "+str(self.finger_table[key]["id"])+"-Ip: "+str(self.finger_table[key]["ip"])+"-Puerto: "+str(self.finger_table[key]["puerto"]))
+			print(str(key) +" Nodo: "+str(self.finger_table[key]["id"])+"  Ip: "+str(self.finger_table[key]["ip"])+"  Puerto: "+str(self.finger_table[key]["puerto"]))
 
 	def Mostrar_Archivos(self):
 		for key in self.archivos:
@@ -129,7 +129,7 @@ def Server(canal_servidor,canal_cliente,conectarNode1, port, mi_nodo,contexto):
 		#print(mensaje)
 		
 		#condicional por medio del cual el nodo entrante busca su puesto en el chord
-		if (mensaje["op"] == "conexion"):
+		if (mensaje["op"] == "ConectarNodoNuevo"):
 			#print("\n")
 			if(conectarNode1):
 				ipn=mensaje['ip']
@@ -153,18 +153,19 @@ def Server(canal_servidor,canal_cliente,conectarNode1, port, mi_nodo,contexto):
 				data=encontrarNodo(mi_nodo.GetId(),table,entrada_nodo_id,1)
 			canal_servidor.send_json(data)
 
-		elif(mensaje["op"] == "torrent_soy_nuevo"):
+		#cuando se conecte el nuevo nodo se le envia las cadenas con los torrent disponibles, para que puedan ser descargados.
+		elif(mensaje["op"] == "EnviarTorrentCadenaNuevoNodo"):
 			mensaje_envio = {"torrents": mi_nodo.GetTorrents()}
 			canal_servidor.send_json(mensaje_envio)
 		
-
-		elif(mensaje["op"] == "pasame_el_torrent"):
+		#Condicional que retorna el torrent-Archivo al nodo que lo este solicitando.
+		elif(mensaje["op"] == "EnviarTorrentArchivo"):
 			filename = mensaje["nombre_torrent"]
 			envio = open(filename+".txt","rb+")
 			info_to_send =  envio.read()
 			canal_servidor.send(info_to_send)
 
-		#Condicion para aceptar el torrent
+		#Condicional para recibir el torrent_cadena en todos los nodos del chord.
 		elif(mensaje["op"] == "toma_un_torrent"):
 			archivo_to_recv = mensaje["nombre"]
 			msj_ip = mensaje["ip"]
@@ -192,13 +193,14 @@ def Server(canal_servidor,canal_cliente,conectarNode1, port, mi_nodo,contexto):
 		elif (mensaje["op"] == "roteme_partes"):
 			archivos = mi_nodo.GetArchivos()
 			archivos_to_send ={}
+			print(archivos)
 			if not archivos:
 				#print("Diccionario de archivos vacios, nada para enviar")
 				canal_servidor.send_json({"op": "nada_para_enviar"})
 			else:
 				for llave in archivos:
 					if(Verificar(llave,mensaje["mi_x"], mi_nodo.GetX()-1)):
-						#print("Llave a rotar: "+str(llave))
+						print("Llave a rotar: "+str(llave))
 						archivos_to_send[llave] = archivos[llave]
 				canal_servidor.send_json({"op" : "rotando_partes", "lista_partes": archivos_to_send})
 				canal_servidor.recv_string()
@@ -351,7 +353,7 @@ def main():
 		my_port = sys.argv[2]
 		ide = random.randrange(0,cant_nodos-1)
 		#ide=int(input("Id : "))
-		#print(ide)
+		print(ide)
 		nuevo = Nodo(my_ip, my_port,ide)
 		comp_x = ide + 1
 		comp_y = ide
@@ -367,7 +369,7 @@ def main():
 		my_port = sys.argv[2]
 		ide = random.randrange(0,cant_nodos-1)
 		#ide=int(input("Id : "))
-		#print(ide)
+		print(ide)
 		#print("\n")
 		nuevo = Nodo(my_ip, my_port,ide)
 		nuevo.Finger()
@@ -391,7 +393,7 @@ def main():
 
 		socket_cliente.connect(address)
 
-		data = {"op" : "conexion","id" : nuevo.GetId(), "ip" : nuevo.GetIp(), "puerto" : nuevo.GetPuerto()}
+		data = {"op" : "ConectarNodoNuevo","id" : nuevo.GetId(), "ip" : nuevo.GetIp(), "puerto" : nuevo.GetPuerto()}
 		socket_cliente.send_json(data)
 		respuesta = socket_cliente.recv_json()
 
@@ -456,13 +458,16 @@ def main():
 
 			#Recibiendo los archivos que me corresponden
 			#print("Empezando a rotar archivos...")
-
+			socket_cliente.disconnect(address)
+			address = "tcp://"+sucesor["ip"]+":"+sucesor["puerto"]
+			socket_cliente.connect(address)
 			solicitud_partes = {"op": "roteme_partes","mi_x":nuevo.GetX()}
 			socket_cliente.send_json(solicitud_partes)
 			responde = socket_cliente.recv_json()
 
 			if(responde["op"] == "rotando_partes"):
 				partes = responde["lista_partes"]
+				nuevo.SetArchivos(partes)
 				socket_cliente.send_string("Mandelas")
 				#print("Partes Recibidas son: ")
 				#print(partes)
@@ -479,7 +484,7 @@ def main():
 				#print("No hay archivos para recibir")
 
 			#print("Recibiendo torrents existentes")
-			solicitud_torrents = {"op": "torrent_soy_nuevo"}
+			solicitud_torrents = {"op": "EnviarTorrentCadenaNuevoNodo"}
 			socket_cliente.send_json(solicitud_torrents)
 			torrents_to_recv = socket_cliente.recv_json()
 			nuevo.SetTorrents(torrents_to_recv["torrents"])
@@ -649,7 +654,7 @@ def main():
 				socket_cliente.disconnect(address)
 				address = "tcp://"+ip_connect+":"+puerto_connect
 				socket_cliente.connect(address)
-				socket_cliente.send_json({"op":"pasame_el_torrent", "nombre_torrent": filename})
+				socket_cliente.send_json({"op":"EnviarTorrentArchivo", "nombre_torrent": filename})
 				info = socket_cliente.recv()
 				archivo = open(filename+".txt","ab+")
 				archivo.write(info)
@@ -699,6 +704,9 @@ def main():
 							socket_cliente.connect(address)
 
 		if(op==4):
+			print("Mis Datos")
+			print("Id: " + str(nuevo.GetId())+"  "+"Ip: "+str(nuevo.GetIp())+"  "+"Puerto: "+str(nuevo.GetPuerto()))
+			print("Rango: " + "(" + str(nuevo.GetX())+" - "+ str(nuevo.GetY())+ ")")
 			nuevo.Mostrar_Finger()
 
 		if(op==5):
